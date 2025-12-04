@@ -1,6 +1,6 @@
 services:
   web:
-    image: nginx:alpine
+    image: nginx
     ports:
       - "81:80"
     volumes:
@@ -15,6 +15,7 @@ services:
     restart: always
     volumes:
       - ./:/var/www/html
+      - ./docker/Php/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 
   db:
     image: postgres:13

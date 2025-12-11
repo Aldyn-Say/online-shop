@@ -4,7 +4,7 @@ function validateUser($data) {
 
     // Проверка имени
     if (isset($data['name'])) {
-        $name = trim($data["name"]);
+        $name = ($data["name"]);
         if (empty($name)) {
             $errors['name'] = 'Заполните поле Name';
         } elseif (strlen($name) < 2) {
@@ -18,7 +18,7 @@ function validateUser($data) {
 
     // Проверка email
     if (isset($data['email'])) {
-        $email = trim($data["email"]);
+        $email = $data['email'];
         if (empty($email)) {
             $errors['email'] = 'Введите Email';
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -45,7 +45,7 @@ function validateUser($data) {
         $password_confirm = $data["password_confirm"];
         if (empty($password_confirm)) {
             $errors['password_confirm'] = 'Подтвердите пароль';
-        } elseif (isset($password) && $password !== $password_confirm) {
+        } elseif (isset($data['password']) && $data['password'] !== $password_confirm) {
             $errors['password_confirm'] = 'Пароли не совпадают';
         }
     } else {
@@ -55,19 +55,18 @@ function validateUser($data) {
     return $errors;
 }
 
-// Проверяем, что форма отправлена
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
     $errors = validateUser($_POST);
 
     if (empty($errors)) {
-        // Берем очищенные данные
-        $name = trim($_POST["name"]);
-        $email = trim($_POST["email"]);
+        $name = $_POST["name"];
+        $email = $_POST["email"];
         $password = $_POST["password"];
 
         try {
+
             $pdo = new PDO("pgsql:host=db;port=5432;dbname=postgres", "aldun", "0000");
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             // Проверяем, не существует ли уже пользователь с таким email
             $stmt = $pdo->prepare("SELECT id FROM users WHERE email = :email");
@@ -83,14 +82,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ':email' => $email,
                     ':password' => password_hash($password, PASSWORD_DEFAULT)
                 ]);
-
-                exit;
+                header('Location: ./login.php');
+                exit();
             }
-        } catch (PDOException $e) {
-            $errors['database'] = 'Ошибка базы данных: ' . $e->getMessage();
+        }
+        catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            $errors['database'] = 'Ошибка сервера. Попробуйте позже.';
         }
     }
 }
-
 require_once './registration_form.php';
 ?>

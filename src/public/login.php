@@ -168,10 +168,6 @@
             display: none;
         }
 
-        .social-login {
-            margin-top: 25px;
-            text-align: center;
-        }
 
         .social-login p {
             color: #666;
@@ -198,40 +194,6 @@
             right: 0;
         }
 
-        .social-icons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .social-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            text-decoration: none;
-            font-size: 18px;
-            transition: transform 0.3s;
-        }
-
-        .social-icon:hover {
-            transform: translateY(-3px);
-        }
-
-        .social-icon.google {
-            background: #DB4437;
-        }
-
-        .social-icon.facebook {
-            background: #4267B2;
-        }
-
-        .social-icon.twitter {
-            background: #1DA1F2;
-        }
 
         @media (max-width: 480px) {
             .login-box {
@@ -259,11 +221,17 @@
         <form id="loginForm" action="./handle_login.php" method="POST">
             <div class="input-group">
                 <label for="email">Email</label>
+                <?php if (isset($errors['email'])): ?>
+                    <label style="color: brown" ><?php echo $errors['email']; ?></label>
+                <?php endif; ?>
                 <input type="email" id="email" name="email" placeholder="Введите ваш email" required>
             </div>
 
             <div class="input-group">
                 <label for="password">Пароль</label>
+                <?php if (isset($errors['password'])): ?>
+                    <label style="color: brown" ><?php echo $errors['password']; ?></label>
+                <?php endif; ?>
                 <input type="password" id="password" name="password" placeholder="Введите ваш пароль" required>
             </div>
 
@@ -283,64 +251,62 @@
     </div>
 </div>
 
-<script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const errorMessage = document.getElementById('errorMessage');
-
-        // Простая валидация
-        if (!email || !password) {
-            errorMessage.textContent = 'Пожалуйста, заполните все поля';
-            errorMessage.style.display = 'block';
-            return;
-        }
-
-        if (!validateEmail(email)) {
-            errorMessage.textContent = 'Введите корректный email адрес';
-            errorMessage.style.display = 'block';
-            return;
-        }
-
-        // Здесь обычно будет AJAX запрос к серверу
-        console.log('Отправка данных:', { email, password });
-
-        // Симуляция успешного входа
-        errorMessage.style.display = 'none';
-        alert('Вход выполнен успешно!');
-
-        // В реальном проекте здесь будет редирект
-        // window.location.href = '/dashboard';
-    });
-
-    function validateEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
-    }
-
-    // Показать/скрыть пароль (дополнительная функция)
-    const passwordInput = document.getElementById('password');
-    const togglePassword = document.createElement('span');
-    togglePassword.innerHTML = '👁️';
-    togglePassword.style.cssText = `
-            position: absolute;
-            right: 15px;
-            top: 38px;
-            cursor: pointer;
-            user-select: none;
-        `;
-
-    const passwordGroup = document.querySelector('.input-group:nth-child(2)');
-    passwordGroup.style.position = 'relative';
-    passwordGroup.appendChild(togglePassword);
-
-    togglePassword.addEventListener('click', function() {
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
-        this.innerHTML = type === 'password' ? '👁️' : '👁️‍🗨️';
-    });
-</script>
+<!--<script>-->
+<!--    document.getElementById('loginForm').addEventListener('submit', function (e) {-->
+<!--        e.preventDefault();-->
+<!---->
+<!--        const email = document.getElementById('email').value;-->
+<!--        const password = document.getElementById('password').value;-->
+<!--        const errorMessage = document.getElementById('errorMessage');-->
+<!---->
+<!--        // Простая валидация-->
+<!--        if (!email || !password) {-->
+<!--            errorMessage.textContent = 'Пожалуйста, заполните все поля';-->
+<!--            errorMessage.style.display = 'block';-->
+<!--            return;-->
+<!--        }-->
+<!---->
+<!--        if (!validateEmail(email)) {-->
+<!--            errorMessage.textContent = 'Введите корректный email адрес';-->
+<!--            errorMessage.style.display = 'block';-->
+<!--            return;-->
+<!--        }-->
+<!---->
+<!--        // Здесь обычно будет AJAX запрос к серверу-->
+<!--        console.log('Отправка данных:', {email, password});-->
+<!---->
+<!---->
+<!--        // В реальном проекте здесь будет редирект-->
+<!--        // window.location.href = '/dashboard';-->
+<!--        header('Location: /catalog.php');-->
+<!--    });-->
+<!---->
+<!--    function validateEmail(email) {-->
+<!--        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;-->
+<!--        return re.test(email);-->
+<!--    }-->
+<!---->
+<!--    // Показать/скрыть пароль (дополнительная функция)-->
+<!--    const passwordInput = document.getElementById('password');-->
+<!--    const togglePassword = document.createElement('span');-->
+<!--    togglePassword.innerHTML = '👁️';-->
+<!--    togglePassword.style.cssText = `-->
+<!--            position: absolute;-->
+<!--            right: 15px;-->
+<!--            top: 38px;-->
+<!--            cursor: pointer;-->
+<!--            user-select: none;-->
+<!--        `;-->
+<!---->
+<!--    const passwordGroup = document.querySelector('.input-group:nth-child(2)');-->
+<!--    passwordGroup.style.position = 'relative';-->
+<!--    passwordGroup.appendChild(togglePassword);-->
+<!---->
+<!--    togglePassword.addEventListener('click', function () {-->
+<!--        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';-->
+<!--        passwordInput.setAttribute('type', type);-->
+<!--        this.innerHTML = type === 'password' ? '👁️' : '👁️‍🗨️';-->
+<!--    });-->
+<!--</script>-->
 </body>
 </html>

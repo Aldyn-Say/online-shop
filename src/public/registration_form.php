@@ -146,11 +146,11 @@
         </div>
 
         <div class="form-group">
-            <label for="$password_confirm">Подтвердите пароль</label>
+            <label for="password_confirm">Подтвердите пароль</label>
             <?php if (isset($errors['password_confirm'])): ?>
                 <label style="color: brown" ><?php echo $errors['password_confirm']; ?></label>
             <?php endif; ?>
-            <input type="password" id="$password_confirm" name="$password_confirm" placeholder="Повторите пароль">
+            <input type="password" id="password_confirm" name="password_confirm" placeholder="Повторите пароль">
         </div>
 
         <button type="submit" class="submit-btn">Зарегистрироваться</button>

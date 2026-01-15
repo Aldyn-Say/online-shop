@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'cart_functions.php';
+require_once 'Cart.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -9,18 +9,19 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 $userId = $_SESSION['user_id'];
+$cart = new Cart();
 $errors = [];
 $success = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $productId = $_POST['product_id'] ?? null;
+    $productId = isset($_POST['product_id']) ? intval($_POST['product_id']) : null;
     
     // Валидация
-    if (empty($productId)) {
+    if (empty($productId) || $productId <= 0) {
         $errors[] = 'Не указан товар';
     } else {
         // Удаление товара из корзины
-        $result = removeFromCart($userId, $productId);
+        $result = $cart->removeFromCart($userId, $productId);
         
         if ($result['success']) {
             $success[] = $result['message'];
@@ -46,4 +47,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Редирект обратно на корзину
 header('Location: /cart');
 exit();
-

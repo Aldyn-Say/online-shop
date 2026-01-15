@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'cart_functions.php';
+require_once 'Cart.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -10,6 +10,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 $userId = $_SESSION['user_id'];
+$cart = new Cart();
 $errors = [];
 $success = [];
 
@@ -24,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Количество должно быть больше нуля';
     } else {
         // Добавление товара в корзину
-        $result = addToCart($userId, $productId, $quantity);
+        $result = $cart->addToCart($userId, $productId, $quantity);
         
         if ($result['success']) {
             $success[] = $result['message'];
@@ -52,4 +53,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $redirectUrl = $_SERVER['HTTP_REFERER'] ?? '/catalog';
 header('Location: ' . $redirectUrl);
 exit();
-

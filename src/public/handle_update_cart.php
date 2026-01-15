@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'cart_functions.php';
+require_once 'Cart.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -9,21 +9,22 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 $userId = $_SESSION['user_id'];
+$cart = new Cart();
 $errors = [];
 $success = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $productId = $_POST['product_id'] ?? null;
+    $productId = isset($_POST['product_id']) ? intval($_POST['product_id']) : null;
     $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
     
     // Валидация
-    if (empty($productId)) {
+    if (empty($productId) || $productId <= 0) {
         $errors[] = 'Не указан товар';
     } elseif ($quantity < 0) {
         $errors[] = 'Количество не может быть отрицательным';
     } else {
         // Обновление количества товара
-        $result = updateCartItemQuantity($userId, $productId, $quantity);
+        $result = $cart->updateCartItemQuantity($userId, $productId, $quantity);
         
         if ($result['success']) {
             $success[] = $result['message'];
@@ -49,4 +50,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Редирект обратно на корзину
 header('Location: /cart');
 exit();
-

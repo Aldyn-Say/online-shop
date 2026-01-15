@@ -1,9 +1,8 @@
 <?php
 session_start();
+require_once 'Catalog.php';
 
-$pdo = new PDO("pgsql:host=db;port=5432;dbname=postgres", "aldun", "0000");
-$stmt = $pdo->query("SELECT * FROM products");
-$products = $stmt->fetchAll();
-//print_r($products);
+$catalog = new Catalog();
+$products = $catalog->getAllProducts();
 
 require_once './catalog_page.php';

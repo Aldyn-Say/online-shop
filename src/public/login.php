@@ -218,7 +218,7 @@
             Неверный email или пароль. Попробуйте снова.
         </div>
 
-        <form id="loginForm" action="./handle_login.php" method="POST">
+        <form id="loginForm" action="/login" method="POST">
             <div class="input-group">
                 <label for="email">Email</label>
                 <?php if (isset($errors['email'])): ?>

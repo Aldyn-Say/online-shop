@@ -120,7 +120,7 @@
 <body>
 <div class="registration-container">
     <h1 class="registration-title">Регистрация</h1>
-    <form action="handle_registration_form.php" method="POST">
+    <form action="/registration" method="POST">
         <div class="form-group">
             <label for="name">Имя</label>
             <?php if (isset($errors['name'])): ?>
@@ -157,7 +157,7 @@
     </form>
 
     <div class="login-link">
-        Уже есть аккаунт? <a href="/login.php">Войти</a>
+        Уже есть аккаунт? <a href="/login">Войти</a>
     </div>
 </div>
 </body>

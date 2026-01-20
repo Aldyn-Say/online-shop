@@ -1,15 +1,14 @@
 <?php
 session_start();
-require_once 'User.php';
+require_once 'user_functions.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header('Location: /login');
+    header('Location: login.php');
     exit();
 }
 
 $userId = $_SESSION['user_id'];
-$user = new User();
 $errors = [];
 $success = [];
 
@@ -44,9 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
                 $filePath = $uploadDir . $fileName;
                 
                 // Удаление старого аватара, если он существует
-                $userData = $user->getUserById($userId);
-                if ($userData && !empty($userData['avatar'])) {
-                    $oldAvatarPath = $uploadDir . $userData['avatar'];
+                $user = getUserById($userId);
+                if ($user && !empty($user['avatar'])) {
+                    $oldAvatarPath = $uploadDir . $user['avatar'];
                     if (file_exists($oldAvatarPath)) {
                         unlink($oldAvatarPath);
                     }
@@ -55,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
                 // Загрузка файла
                 if (move_uploaded_file($file['tmp_name'], $filePath)) {
                     // Обновление в базе данных
-                    $result = $user->updateAvatar($userId, $fileName);
+                    $result = updateUserAvatar($userId, $fileName);
                     if ($result['success']) {
                         $success['avatar'] = $result['message'];
                     } else {
@@ -78,6 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
 // Перенаправление обратно на страницу профиля с сообщениями
 $_SESSION['profile_errors'] = $errors;
 $_SESSION['profile_success'] = $success;
-header('Location: /profile');
+header('Location: profile.php');
 exit();
 

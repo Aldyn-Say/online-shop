@@ -1,15 +1,14 @@
 <?php
 session_start();
-require_once 'User.php';
+require_once 'user_functions.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header('Location: /login');
+    header('Location: login.php');
     exit();
 }
 
 $userId = $_SESSION['user_id'];
-$user = new User();
 $errors = [];
 $success = [];
 
@@ -17,26 +16,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Обновление имени
     if (isset($_POST['update_name']) && !empty($_POST['name'])) {
         $name = trim($_POST['name']);
-        $result = $user->updateName($userId, $name);
+        $nameErrors = validateName($name);
         
-        if ($result['success']) {
-            $success['name'] = $result['message'];
-            $_SESSION['user_name'] = $name;
+        if (empty($nameErrors)) {
+            $result = updateUserName($userId, $name);
+            if ($result['success']) {
+                $success['name'] = $result['message'];
+                $_SESSION['user_name'] = $name;
+            } else {
+                $errors['name'] = $result['message'];
+            }
         } else {
-            $errors['name'] = $result['message'];
+            $errors['name'] = implode(', ', $nameErrors);
         }
     }
     
     // Обновление email
     if (isset($_POST['update_email']) && !empty($_POST['email'])) {
         $email = trim($_POST['email']);
-        $result = $user->updateEmail($userId, $email);
+        $emailErrors = validateEmail($email, $userId);
         
-        if ($result['success']) {
-            $success['email'] = $result['message'];
-            $_SESSION['user_email'] = $email;
+        if (empty($emailErrors)) {
+            $result = updateUserEmail($userId, $email);
+            if ($result['success']) {
+                $success['email'] = $result['message'];
+                $_SESSION['user_email'] = $email;
+            } else {
+                $errors['email'] = $result['message'];
+            }
         } else {
-            $errors['email'] = $result['message'];
+            $errors['email'] = implode(', ', $emailErrors);
         }
     }
     
@@ -46,12 +55,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newPassword = $_POST['new_password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
         
-        $result = $user->updatePassword($userId, $currentPassword, $newPassword, $confirmPassword);
-        
-        if ($result['success']) {
-            $success['password'] = $result['message'];
+        // Проверка текущего пароля
+        if (!verifyCurrentPassword($userId, $currentPassword)) {
+            $errors['password'] = 'Неверный текущий пароль';
         } else {
-            $errors['password'] = $result['message'];
+            $passwordErrors = validatePassword($newPassword, $confirmPassword);
+            
+            if (empty($passwordErrors)) {
+                $result = updateUserPassword($userId, $newPassword);
+                if ($result['success']) {
+                    $success['password'] = $result['message'];
+                } else {
+                    $errors['password'] = $result['message'];
+                }
+            } else {
+                $errors['password'] = implode(', ', $passwordErrors);
+            }
         }
     }
 }
@@ -59,6 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Перенаправление обратно на страницу профиля с сообщениями
 $_SESSION['profile_errors'] = $errors;
 $_SESSION['profile_success'] = $success;
-header('Location: /profile');
+header('Location: profile.php');
 exit();
 

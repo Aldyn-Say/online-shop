@@ -1,13 +1,6 @@
 <?php
-// Получаем путь без query string и нормализуем его
-$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$requestUri = $_SERVER['REQUEST_URI'];
 $requestMethod = $_SERVER['REQUEST_METHOD'];
-
-// Обработка корневого пути
-if ($requestUri === '/' || $requestUri === '') {
-    header('Location: /catalog');
-    exit();
-}
 
 if ($requestUri === '/registration') {
     if ($requestMethod === 'GET') {

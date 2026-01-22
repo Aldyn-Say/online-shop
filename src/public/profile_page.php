@@ -229,7 +229,7 @@
             <?php if (isset($success['avatar'])): ?>
                 <div class="success-message"><?php echo htmlspecialchars($success['avatar']); ?></div>
             <?php endif; ?>
-            <form action="upload_avatar.php" method="POST" enctype="multipart/form-data" id="avatarForm">
+            <form action="/upload_avatar" method="POST" enctype="multipart/form-data" id="avatarForm">
                 <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;"
                        onchange="document.getElementById('avatarForm').submit()">
                 <button type="button" class="btn btn-edit" onclick="document.getElementById('avatarUpload').click()">
@@ -253,7 +253,7 @@
                 <div class="success-message"><?php echo htmlspecialchars($success['name']); ?></div>
             <?php endif; ?>
             <div class="edit-form" id="nameEditForm">
-                <form action="handle_profile_update.php" method="POST">
+                <form action="/profile" method="POST">
                     <div class="form-group">
                         <input type="text" name="name" value="<?php echo htmlspecialchars($user['name'] ?? ''); ?>" required>
                     </div>
@@ -278,7 +278,7 @@
                 <div class="success-message"><?php echo htmlspecialchars($success['email']); ?></div>
             <?php endif; ?>
             <div class="edit-form" id="emailEditForm">
-                <form action="handle_profile_update.php" method="POST">
+                <form action="/profile" method="POST">
                     <div class="form-group">
                         <input type="email" name="email" value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>" required>
                     </div>
@@ -303,7 +303,7 @@
                 <div class="success-message"><?php echo htmlspecialchars($success['password']); ?></div>
             <?php endif; ?>
             <div class="edit-form" id="passwordEditForm">
-                <form action="handle_profile_update.php" method="POST">
+                <form action="/profile" method="POST">
                     <div class="form-group">
                         <input type="password" name="current_password" placeholder="Текущий пароль" required>
                     </div>

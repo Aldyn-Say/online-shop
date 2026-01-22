@@ -218,7 +218,7 @@
             Неверный email или пароль. Попробуйте снова.
         </div>
 
-        <form id="loginForm" action="./handle_login.php" method="POST">
+        <form id="loginForm" action="/login" method="POST">
             <div class="input-group">
                 <label for="email">Email</label>
                 <?php if (isset($errors['email'])): ?>
@@ -251,62 +251,5 @@
     </div>
 </div>
 
-<!--<script>-->
-<!--    document.getElementById('loginForm').addEventListener('submit', function (e) {-->
-<!--        e.preventDefault();-->
-<!---->
-<!--        const email = document.getElementById('email').value;-->
-<!--        const password = document.getElementById('password').value;-->
-<!--        const errorMessage = document.getElementById('errorMessage');-->
-<!---->
-<!--        // Простая валидация-->
-<!--        if (!email || !password) {-->
-<!--            errorMessage.textContent = 'Пожалуйста, заполните все поля';-->
-<!--            errorMessage.style.display = 'block';-->
-<!--            return;-->
-<!--        }-->
-<!---->
-<!--        if (!validateEmail(email)) {-->
-<!--            errorMessage.textContent = 'Введите корректный email адрес';-->
-<!--            errorMessage.style.display = 'block';-->
-<!--            return;-->
-<!--        }-->
-<!---->
-<!--        // Здесь обычно будет AJAX запрос к серверу-->
-<!--        console.log('Отправка данных:', {email, password});-->
-<!---->
-<!---->
-<!--        // В реальном проекте здесь будет редирект-->
-<!--        // window.location.href = '/dashboard';-->
-<!--        header('Location: /catalog.php');-->
-<!--    });-->
-<!---->
-<!--    function validateEmail(email) {-->
-<!--        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;-->
-<!--        return re.test(email);-->
-<!--    }-->
-<!---->
-<!--    // Показать/скрыть пароль (дополнительная функция)-->
-<!--    const passwordInput = document.getElementById('password');-->
-<!--    const togglePassword = document.createElement('span');-->
-<!--    togglePassword.innerHTML = '👁️';-->
-<!--    togglePassword.style.cssText = `-->
-<!--            position: absolute;-->
-<!--            right: 15px;-->
-<!--            top: 38px;-->
-<!--            cursor: pointer;-->
-<!--            user-select: none;-->
-<!--        `;-->
-<!---->
-<!--    const passwordGroup = document.querySelector('.input-group:nth-child(2)');-->
-<!--    passwordGroup.style.position = 'relative';-->
-<!--    passwordGroup.appendChild(togglePassword);-->
-<!---->
-<!--    togglePassword.addEventListener('click', function () {-->
-<!--        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';-->
-<!--        passwordInput.setAttribute('type', type);-->
-<!--        this.innerHTML = type === 'password' ? '👁️' : '👁️‍🗨️';-->
-<!--    });-->
-<!--</script>-->
 </body>
 </html>

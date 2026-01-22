@@ -1,20 +1,21 @@
 <?php
 session_start();
-require_once 'user_functions.php';
+require_once 'User.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header('Location: login.php');
+    header('Location: /login');
     exit();
 }
 
 $userId = $_SESSION['user_id'];
+$user = new User();
 $errors = [];
 $success = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
     $file = $_FILES['avatar'];
-    
+
     // Проверка на ошибки загрузки
     if ($file['error'] !== UPLOAD_ERR_OK) {
         $errors['avatar'] = 'Ошибка при загрузке файла';
@@ -22,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
         // Проверка типа файла
         $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         $fileType = mime_content_type($file['tmp_name']);
-        
+
         if (!in_array($fileType, $allowedTypes)) {
             $errors['avatar'] = 'Разрешены только изображения (JPEG, PNG, GIF, WebP)';
         } else {
@@ -36,25 +37,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
-                
+
                 // Генерация уникального имени файла
                 $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
                 $fileName = 'avatar_' . $userId . '_' . time() . '.' . $extension;
                 $filePath = $uploadDir . $fileName;
-                
+
                 // Удаление старого аватара, если он существует
-                $user = getUserById($userId);
-                if ($user && !empty($user['avatar'])) {
-                    $oldAvatarPath = $uploadDir . $user['avatar'];
+                $userData = $user->getUserById($userId);
+                if ($userData && !empty($userData['avatar'])) {
+                    $oldAvatarPath = $uploadDir . $userData['avatar'];
                     if (file_exists($oldAvatarPath)) {
                         unlink($oldAvatarPath);
                     }
                 }
-                
+
                 // Загрузка файла
                 if (move_uploaded_file($file['tmp_name'], $filePath)) {
                     // Обновление в базе данных
-                    $result = updateUserAvatar($userId, $fileName);
+                    $result = $user->updateAvatar($userId, $fileName);
                     if ($result['success']) {
                         $success['avatar'] = $result['message'];
                     } else {
@@ -77,6 +78,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
 // Перенаправление обратно на страницу профиля с сообщениями
 $_SESSION['profile_errors'] = $errors;
 $_SESSION['profile_success'] = $success;
-header('Location: profile.php');
+header('Location: /profile');
 exit();
-

@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'Cart.php';
+require_once '../Controllers/CartController.php';
 
 // Проверка авторизации ДО всего остального
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -17,7 +17,7 @@ if (!$userId) {
     exit();
 }
 
-$cart = new Cart();
+$cart = new CartController();
 
 // Обработка только POST-запросов
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
         } else {
             // Логирование ошибки
-            error_log("Error adding to cart: " . $result['message'] . " | User ID: " . $userId . " | Product ID: " . $productId);
+            error_log("Error adding to cart: " . $result['message'] . " | UserController ID: " . $userId . " | Product ID: " . $productId);
 
             $_SESSION['cart_message'] = [
                 'type' => 'error',

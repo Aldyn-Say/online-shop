@@ -8,7 +8,7 @@ if (!function_exists('getDBConnection')) {
     }
 }
 
-class Catalog
+class CatalogController
 {
     private $pdo;
 

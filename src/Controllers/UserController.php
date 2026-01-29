@@ -1,12 +1,14 @@
 <?php
 require_once 'database.php';
+require_once '../Models/User.php';
 
-class User {
+class UserController {
     private $pdo;
+    private $userModel;
 
     public function __construct($pdo = null) {
-        // Если подключение передано - используем его, иначе создаем новое
         $this->pdo = $pdo ?? getDBConnection();
+        $this->userModel = new User($this->pdo);
     }
 
     private function validateName($name) {
@@ -30,7 +32,7 @@ class User {
             $errors[] = 'Введите Email';
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'Неверный формат Email';
-        } elseif ($checkUnique && $this->emailExists($email, $currentUserId)) {
+        } elseif ($checkUnique && $this->userModel->emailExists($email, $currentUserId)) {
             $errors[] = 'Пользователь с таким email уже существует';
         }
 
@@ -51,22 +53,6 @@ class User {
         }
 
         return $errors;
-    }
-
-    private function emailExists($email, $excludeUserId = null) {
-        try {
-            if ($excludeUserId !== null) {
-                $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = :email AND id != :user_id");
-                $stmt->execute([':email' => $email, ':user_id' => $excludeUserId]);
-            } else {
-                $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = :email");
-                $stmt->execute([':email' => $email]);
-            }
-            return $stmt->fetch() !== false;
-        } catch (PDOException $e) {
-            error_log("Database error in emailExists: " . $e->getMessage());
-            return false;
-        }
     }
 
     public function validateRegistration($data) {
@@ -109,15 +95,18 @@ class User {
             $email = trim($data['email']);
             $password = $data['password'];
 
-            // Вставляем нового пользователя
-            $stmt = $this->pdo->prepare("INSERT INTO users (name, email, password) VALUES (:name, :email, :password)");
-            $stmt->execute([
-                ':name' => $name,
-                ':email' => $email,
-                ':password' => password_hash($password, PASSWORD_DEFAULT)
+            // Вставляем нового пользователя через модель
+            $success = $this->userModel->create([
+                'name' => $name,
+                'email' => $email,
+                'password' => password_hash($password, PASSWORD_DEFAULT)
             ]);
 
-            return ['success' => true, 'message' => 'Пользователь успешно зарегистрирован'];
+            if ($success) {
+                return ['success' => true, 'message' => 'Пользователь успешно зарегистрирован'];
+            } else {
+                return ['success' => false, 'errors' => ['database' => 'Ошибка при создании пользователя']];
+            }
         } catch (PDOException $e) {
             error_log("Database error in register: " . $e->getMessage());
             return ['success' => false, 'errors' => ['database' => 'Ошибка сервера. Попробуйте позже.']];
@@ -148,10 +137,8 @@ class User {
         }
 
         try {
-            // Поиск пользователя
-            $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = :email");
-            $stmt->execute([':email' => $email]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            // Поиск пользователя через модель
+            $user = $this->userModel->getByEmail($email);
 
             if ($user && isset($user['password']) && password_verify($password, $user['password'])) {
                 return [
@@ -179,9 +166,12 @@ class User {
         }
 
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET name = :name WHERE id = :id");
-            $stmt->execute([':name' => $name, ':id' => $userId]);
-            return ['success' => true, 'message' => 'Имя успешно обновлено'];
+            $success = $this->userModel->updateName($userId, $name);
+            if ($success) {
+                return ['success' => true, 'message' => 'Имя успешно обновлено'];
+            } else {
+                return ['success' => false, 'message' => 'Ошибка при обновлении имени'];
+            }
         } catch (PDOException $e) {
             error_log("Database error in updateName: " . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при обновлении имени'];
@@ -196,9 +186,12 @@ class User {
         }
 
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET email = :email WHERE id = :id");
-            $stmt->execute([':email' => $email, ':id' => $userId]);
-            return ['success' => true, 'message' => 'Email успешно обновлен'];
+            $success = $this->userModel->updateEmail($userId, $email);
+            if ($success) {
+                return ['success' => true, 'message' => 'Email успешно обновлен'];
+            } else {
+                return ['success' => false, 'message' => 'Ошибка при обновлении email'];
+            }
         } catch (PDOException $e) {
             error_log("Database error in updateEmail: " . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при обновлении email'];
@@ -206,8 +199,8 @@ class User {
     }
 
     public function updatePassword($userId, $currentPassword, $newPassword, $confirmPassword) {
-        // Проверка текущего пароля
-        if (!$this->verifyCurrentPassword($userId, $currentPassword)) {
+        // Проверка текущего пароля через модель
+        if (!$this->userModel->verifyPassword($userId, $currentPassword)) {
             return ['success' => false, 'message' => 'Неверный текущий пароль'];
         }
 
@@ -219,9 +212,12 @@ class User {
 
         try {
             $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-            $stmt = $this->pdo->prepare("UPDATE users SET password = :password WHERE id = :id");
-            $stmt->execute([':password' => $hashedPassword, ':id' => $userId]);
-            return ['success' => true, 'message' => 'Пароль успешно обновлен'];
+            $success = $this->userModel->updatePassword($userId, $hashedPassword);
+            if ($success) {
+                return ['success' => true, 'message' => 'Пароль успешно обновлен'];
+            } else {
+                return ['success' => false, 'message' => 'Ошибка при обновлении пароля'];
+            }
         } catch (PDOException $e) {
             error_log("Database error in updatePassword: " . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при обновлении пароля'];
@@ -230,9 +226,12 @@ class User {
 
     public function updateAvatar($userId, $avatarFileName) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET avatar = :avatar WHERE id = :id");
-            $stmt->execute([':avatar' => $avatarFileName, ':id' => $userId]);
-            return ['success' => true, 'message' => 'Аватар успешно обновлен'];
+            $success = $this->userModel->updateAvatar($userId, $avatarFileName);
+            if ($success) {
+                return ['success' => true, 'message' => 'Аватар успешно обновлен'];
+            } else {
+                return ['success' => false, 'message' => 'Ошибка при обновлении аватара'];
+            }
         } catch (PDOException $e) {
             error_log("Database error in updateAvatar: " . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при обновлении аватара'];
@@ -240,29 +239,6 @@ class User {
     }
 
     public function getUserById($userId) {
-        try {
-            $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = :id");
-            $stmt->execute([':id' => $userId]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Database error in getUserById: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    public function verifyCurrentPassword($userId, $currentPassword) {
-        try {
-            $stmt = $this->pdo->prepare("SELECT password FROM users WHERE id = :id");
-            $stmt->execute([':id' => $userId]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($user && password_verify($currentPassword, $user['password'])) {
-                return true;
-            }
-            return false;
-        } catch (PDOException $e) {
-            error_log("Database error in verifyCurrentPassword: " . $e->getMessage());
-            return false;
-        }
+        return $this->userModel->getById($userId);
     }
 }

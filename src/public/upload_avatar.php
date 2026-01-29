@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'User.php';
+require_once '../Controllers/UserController.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -9,7 +9,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 $userId = $_SESSION['user_id'];
-$user = new User();
+$user = new UserController();
 $errors = [];
 $success = [];
 

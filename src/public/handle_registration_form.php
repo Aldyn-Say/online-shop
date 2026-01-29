@@ -1,10 +1,10 @@
 <?php
-require_once 'User.php';
+require_once '../Controllers/UserController.php';
 
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $user = new User();
+    $user = new UserController();
     $result = $user->register($_POST);
 
     if ($result['success']) {
@@ -14,5 +14,5 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $errors = $result['errors'];
     }
 }
-require_once './registration_form.php';
+require_once '../Views/registration_form.php';
 ?>

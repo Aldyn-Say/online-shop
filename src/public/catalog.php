@@ -6,4 +6,4 @@ $stmt = $pdo->query("SELECT * FROM products");
 $products = $stmt->fetchAll();
 //print_r($products);
 
-require_once './catalog_page.php';
+require_once '../Views/catalog.php';

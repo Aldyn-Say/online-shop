@@ -4,7 +4,7 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 if ($requestUri === '/registration') {
     if ($requestMethod === 'GET') {
-        require_once './registration_form.php';
+        require_once '../Views/registration_form.php';
     }
     elseif ($requestMethod === 'POST') {
         require_once './handle_registration_form.php';
@@ -12,7 +12,7 @@ if ($requestUri === '/registration') {
 }
 elseif ($requestUri === '/login') {
     if ($requestMethod === 'GET') {
-        require_once './login.php';
+        require_once '../Views/login.php';
     }
     elseif ($requestMethod === 'POST') {
         require_once './handle_login.php';

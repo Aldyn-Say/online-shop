@@ -1,13 +1,13 @@
 <?php
-if (!function_exists('getDBConnection')) {
-    function getDBConnection() {
-        $pdo = new PDO("pgsql:host=db;port=5432;dbname=postgres", "aldun", "0000");
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $pdo;
-    }
-}
+//if (!function_exists('getDBConnection')) {
+//    function getDBConnection() {
+//        $pdo = new PDO("pgsql:host=db;port=5432;dbname=postgres", "aldun", "0000");
+//        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+//        return $pdo;
+//    }
+//}
 
-class Cart {
+class CartController {
     private $pdo;
 
     public function __construct($pdo = null) {
@@ -56,7 +56,7 @@ class Cart {
                 }
             }
         } catch (PDOException $e) {
-            error_log("Database error in addToCart: " . $e->getMessage() . " | User ID: " . $userId . " | Product ID: " . $productId);
+            error_log("Database error in addToCart: " . $e->getMessage() . " | UserController ID: " . $userId . " | Product ID: " . $productId);
             return ['success' => false, 'message' => 'Ошибка при добавлении товара в корзину: ' . $e->getMessage()];
         }
     }

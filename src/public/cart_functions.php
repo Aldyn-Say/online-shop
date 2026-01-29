@@ -44,7 +44,7 @@ function addToCart($userId, $productId, $quantity = 1) {
             }
         }
     } catch (PDOException $e) {
-        error_log("Database error in addToCart: " . $e->getMessage() . " | User ID: " . $userId . " | Product ID: " . $productId);
+        error_log("Database error in addToCart: " . $e->getMessage() . " | UserController ID: " . $userId . " | Product ID: " . $productId);
         return ['success' => false, 'message' => 'Ошибка при добавлении товара в корзину: ' . $e->getMessage()];
     }
 }

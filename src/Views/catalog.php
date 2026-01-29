@@ -196,8 +196,8 @@ unset($_SESSION['cart_message']);
 // Получаем количество товаров в корзине
 $cartCount = 0;
 if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_SESSION['user_id'])) {
-    require_once 'Cart.php';
-    $cart = new Cart();
+    require_once '../Controllers/CartController.php';
+    $cart = new CartController();
     $cartCount = $cart->getCartUniqueItemsCount($_SESSION['user_id']);
 }
 ?>

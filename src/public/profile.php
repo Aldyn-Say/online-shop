@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'User.php';
+require_once '../Controllers/UserController.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -8,7 +8,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit();
 }
 
-$userObj = new User();
+$userObj = new UserController();
 
 // Получение сообщений об ошибках и успехе из сессии
 $errors = $_SESSION['profile_errors'] ?? [];
@@ -17,5 +17,5 @@ $success = $_SESSION['profile_success'] ?? [];
 unset($_SESSION['profile_errors']);
 unset($_SESSION['profile_success']);
 
-require_once 'profile_page.php';
+require_once '../Views/profile.php';
 

@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'Cart.php';
+require_once '../Controllers/CartController.php';
 
 // Проверка авторизации
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -9,7 +9,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 $userId = $_SESSION['user_id'];
-$cart = new Cart();
+$cart = new CartController();
 
 $errors = [];
 $success = [];

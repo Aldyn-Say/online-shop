@@ -6,7 +6,7 @@
 //        return $pdo;
 //    }
 //}
-
+require_once '../public/database.php';
 class CartController {
     private $pdo;
 

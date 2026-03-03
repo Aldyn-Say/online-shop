@@ -20,9 +20,6 @@ class CheckoutController extends Model
         $this->userModel = new User($this->pdo);
     }
 
-    /**
-     * Страница оформления заказа: форма с именем, адресом, телефоном, комментарием.
-     */
     public function showCheckout()
     {
         if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -34,8 +31,9 @@ class CheckoutController extends Model
             return ['redirect' => '/login'];
         }
 
-        $cartItems = $this->cartModel->getCartItems($userId);
-        $cartTotal = $this->cartModel->getCartTotal($userId);
+        $this->cartModel->loadByUserId((int) $userId);
+        $cartItems = $this->cartModel->getItems();
+        $cartTotal = $this->cartModel->getTotal();
 
         if (empty($cartItems)) {
             $_SESSION['cart_message'] = ['type' => 'error', 'text' => 'Корзина пуста. Добавьте товары перед оформлением заказа.'];
@@ -47,16 +45,13 @@ class CheckoutController extends Model
         $checkoutErrors = $_SESSION['checkout_errors'] ?? [];
         $checkoutForm = $_SESSION['checkout_form'] ?? [];
         if (empty($checkoutForm['name']) && $user) {
-            $checkoutForm['name'] = $user['name'] ?? '';
+            $checkoutForm['name'] = $user->getName() ?? '';
         }
         unset($_SESSION['checkout_message'], $_SESSION['checkout_errors'], $_SESSION['checkout_form']);
 
         require_once __DIR__ . '/../Views/checkout.php';
     }
 
-    /**
-     * Обработка формы: валидация, запись в orders и order_products, очистка корзины.
-     */
     public function handleCheckout()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

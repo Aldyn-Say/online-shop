@@ -3,29 +3,19 @@ namespace Controllers;
 
 use Models\Cart;
 use Models\Model;
+use Models\Product;
 use PDO;
 
 class CatalogController extends Model
 {
-    private ?Cart $cartModel = null;
+    private Cart $cartModel;
+    private Product $productModel;
 
     public function __construct(PDO $pdo = null)
     {
         parent::__construct($pdo);
         $this->cartModel = new Cart($this->pdo);
-    }
-
-    public function getAllProducts()
-    {
-        $stmt = $this->pdo->query("SELECT * FROM products");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function getProductById($id)
-    {
-        $stmt = $this->pdo->prepare("SELECT * FROM products WHERE id = :id");
-        $stmt->execute([':id' => $id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $this->productModel = new Product($this->pdo);
     }
 
     public function showCatalog()
@@ -33,11 +23,12 @@ class CatalogController extends Model
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
-        $products = $this->getAllProducts();
+        $products = $this->productModel->getAll();
         $userName = $_SESSION['user_name'] ?? '';
         $cartCount = 0;
         if (!empty($_SESSION['user_id'])) {
-            $cartCount = $this->cartModel->getCartItemsCount($_SESSION['user_id']);
+            $this->cartModel->loadByUserId((int) $_SESSION['user_id']);
+            $cartCount = $this->cartModel->getItemsCount();
         }
         require_once __DIR__ . '/../Views/catalog.php';
     }

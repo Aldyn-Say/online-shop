@@ -171,11 +171,10 @@ class UserController extends Model {
             // Аутентификация
             $user = $this->userModel->getByEmail($email);
 
-            if ($user && password_verify($password, $user['password'])) {
-                // Успешный вход
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_name'] = $user['name'];
-                $_SESSION['user_email'] = $user['email'];
+            if ($user && password_verify($password, $user->getPassword())) {
+                $_SESSION['user_id'] = $user->getId();
+                $_SESSION['user_name'] = $user->getName();
+                $_SESSION['user_email'] = $user->getEmail();
                 $_SESSION['logged_in'] = true;
 
                 // Перенаправляем на профиль
@@ -317,7 +316,6 @@ class UserController extends Model {
     }
 
     public function logout() {
-        //session_start();
         session_destroy();
         return ['redirect' => '/login'];
     }
@@ -331,10 +329,9 @@ class UserController extends Model {
                 mkdir($uploadDir, 0755, true);
             }
 
-            // Удаляем старый аватар
             $user = $this->userModel->getById($userId);
-            if ($user && !empty($user['avatar'])) {
-                $oldPath = $uploadDir . $user['avatar'];
+            if ($user && $user->getAvatar() !== null && $user->getAvatar() !== '') {
+                $oldPath = $uploadDir . $user->getAvatar();
                 if (file_exists($oldPath)) {
                     unlink($oldPath);
                 }

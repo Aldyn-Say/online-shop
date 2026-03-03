@@ -14,54 +14,20 @@ class CartController extends Model
         $this->model = new Cart($this->pdo);
     }
 
-    public function addToCart($userId, $productId, $quantity = 1): array
+    public function showCart()
     {
-        return $this->model->addToCart($userId, $productId, $quantity);
-    }
-
-    public function getCartItems($userId): array
-    {
-        return $this->model->getCartItems($userId);
-    }
-
-    public function updateCartItemQuantity($userId, $productId, $quantity): array
-    {
-        return $this->model->updateCartItemQuantity($userId, $productId, $quantity);
-    }
-
-    public function removeFromCart($userId, $productId) {
-        return $this->model->removeFromCart($userId, $productId);
-    }
-
-    public function clearCart($userId) {
-        return $this->model->clearCart($userId);
-    }
-
-    public function getCartTotal($userId) {
-        return $this->model->getCartTotal($userId);
-    }
-
-    public function getCartItemsCount($userId) {
-        return $this->model->getCartItemsCount($userId);
-    }
-
-    public function getCartUniqueItemsCount($userId) {
-        return $this->model->getCartUniqueItemsCount($userId);
-    }
-
-
-    public function showCart() {
         if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             return ['redirect' => '/login'];
         }
 
-        $userId = $_SESSION['user_id'] ?? null;
-        if (empty($userId)) {
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        if ($userId === 0) {
             return ['redirect' => '/login'];
         }
 
-        $cartItems = $this->getCartItems($userId);
-        $cartTotal = $this->getCartTotal($userId);
+        $this->model->loadByUserId($userId);
+        $cartItems = $this->model->getItems();
+        $cartTotal = $this->model->getTotal();
         $cartMessage = $_SESSION['cart_message'] ?? null;
         unset($_SESSION['cart_message']);
 
@@ -98,9 +64,9 @@ class CartController extends Model
             $errors[] = 'Количество должно быть больше нуля';
         }
 
-        // Если ошибок нет - добавляем в корзину
         if (empty($errors)) {
-            $result = $this->addToCart($userId, $productId, $quantity);
+            $this->model->loadByUserId((int) $userId);
+            $result = $this->model->addToCart($productId, $quantity);
 
             if ($result['success']) {
                 $_SESSION['cart_message'] = [
@@ -124,9 +90,7 @@ class CartController extends Model
             ];
         }
 
-        // Редирект
-        $redirectUrl = $_SERVER['HTTP_REFERER'] ?? '/catalog';
-        // Безопасный редирект
+        $redirectUrl = $_SERVER['HTTP_REFERER'] ?? '/catalog'; // редирект
         if (filter_var($redirectUrl, FILTER_VALIDATE_URL) === false) {
             $redirectUrl = '/catalog';
         }
@@ -143,8 +107,7 @@ class CartController extends Model
             session_start();
         }
 
-        // Проверка авторизации
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) { //проеряем авторизацию
             return ['redirect' => '/login'];
         }
 
@@ -153,20 +116,17 @@ class CartController extends Model
         $success = [];
 
         $productId = $_POST['product_id'] ?? null;
-        $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
+        $quantity = isset($_POST['quantity']) ? (int) $_POST['quantity'] : 1;
 
-        // Валидация
         if (empty($productId)) {
             $errors[] = 'Не указан товар';
         } elseif ($quantity < 1) {
             $errors[] = 'Количество должно быть больше нуля';
         } else {
-            // Обновление количества товара
-            $result = $this->updateCartItemQuantity($userId, $productId, $quantity);
-
+            $this->model->loadByUserId((int) $userId);
+            $result = $this->model->updateQuantity((int) $productId, $quantity);
         }
 
-        // Сохранение сообщений в сессию
         if (!empty($success)) {
             $_SESSION['cart_message'] = [
                 'type' => 'success',
@@ -178,9 +138,7 @@ class CartController extends Model
                 'text' => implode(', ', $errors)
             ];
         }
-
-        // Редирект обратно на корзину
-        return ['redirect' => '/cart'];
+        return ['redirect' => '/cart']; // редирект обратно на корзину
     }
 
     public function handleRemoveFromCart() {
@@ -192,8 +150,7 @@ class CartController extends Model
             session_start();
         }
 
-        // Проверка авторизации
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) { // проверка авторизации
             return ['redirect' => '/login'];
         }
 
@@ -203,12 +160,11 @@ class CartController extends Model
 
         $productId = $_POST['product_id'] ?? null;
 
-        // Валидация
         if (empty($productId)) {
             $errors[] = 'Не указан товар';
         } else {
-            // Удаление товара из корзины
-            $result = $this->removeFromCart($userId, $productId);
+            $this->model->loadByUserId((int) $userId);
+            $result = $this->model->remove((int) $productId);
 
             if (isset($result['success']) && $result['success']) {
                 $success[] = $result['message'] ?? 'Товар успешно удален из корзины';
@@ -217,7 +173,6 @@ class CartController extends Model
             }
         }
 
-        // Сохранение сообщений в сессию
         if (!empty($success)) {
             $_SESSION['cart_message'] = [
                 'type' => 'success',
@@ -230,7 +185,6 @@ class CartController extends Model
             ];
         }
 
-        // Редирект обратно на корзину
-        return ['redirect' => '/cart'];
+        return ['redirect' => '/cart']; // Редирект обратно на корзину
     }
 }

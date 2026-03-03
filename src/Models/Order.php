@@ -6,15 +6,49 @@ use PDOException;
 
 class Order extends Model
 {
-    /**
-     * Оформление заказа: данные в orders, товары в order_products, корзина очищается.
-     * @param int $userId
-     * @param string $name Имя
-     * @param string $address Адрес доставки
-     * @param string $phone Телефон
-     * @param string $comment Комментарий к заказу
-     * @return array ['success' => bool, 'order_id' => int|null, 'message' => string]
-     */
+    private $id;
+    private $userId;
+    private $name;
+    private $address;
+    private $phone;
+    private $comment;
+    private $total;
+    private $status;
+    private $createdAt;
+
+    private array $products = [];
+
+    public function fillFromArray(array $row): void
+    {
+        $this->id = isset($row['id']) ? (int) $row['id'] : null;
+        $this->userId = isset($row['user_id']) ? (int) $row['user_id'] : null;
+        $this->name = $row['name'] ?? null;
+        $this->address = $row['address'] ?? null;
+        $this->phone = $row['phone'] ?? null;
+        $this->comment = $row['comment'] ?? null;
+        $this->total = isset($row['total']) ? (float) $row['total'] : null;
+        $this->status = $row['status'] ?? null;
+        $this->createdAt = $row['created_at'] ?? null;
+    }
+
+    public function setProducts(array $products): void
+    {
+        $this->products = $products;
+    }
+
+    public function getId(): ?int { return $this->id; }
+    public function getUserId(): ?int { return $this->userId; }
+    public function getName(): ?string { return $this->name; }
+    public function getAddress(): ?string { return $this->address; }
+    public function getPhone(): ?string { return $this->phone; }
+    public function getComment(): ?string { return $this->comment; }
+    public function getTotal(): ?float { return $this->total; }
+    public function getStatus(): ?string { return $this->status; }
+    public function getCreatedAt(): ?string { return $this->createdAt; }
+
+    public function getProducts(): array { return $this->products; }
+
+
     public function createOrder(int $userId, string $name, string $address, string $phone, string $comment = ''): array
     {
         try {
@@ -81,36 +115,31 @@ class Order extends Model
         }
     }
 
-    /**
-     * Список заказов пользователя с товарами.
-     */
     public function getOrdersByUserId(int $userId): array
     {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT id, name, address, phone, comment, total, status, created_at
+                SELECT id, user_id, name, address, phone, comment, total, status, created_at
                 FROM orders
                 WHERE user_id = :user_id
                 ORDER BY created_at DESC
             ");
             $stmt->execute([':user_id' => $userId]);
-            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            foreach ($orders as &$order) {
-                $order['products'] = $this->getOrderProducts((int) $order['id']);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = [];
+            foreach ($rows as $row) {
+                $order = new self($this->pdo);
+                $order->fillFromArray($row);
+                $order->setProducts($this->getOrderProducts((int) $row['id']));
+                $result[] = $order;
             }
-            unset($order);
-
-            return $orders;
+            return $result;
         } catch (PDOException $e) {
             error_log("Order::getOrdersByUserId: " . $e->getMessage());
             return [];
         }
     }
 
-    /**
-     * Товары заказа (из order_products + название и цена из products).
-     */
     public function getOrderProducts(int $orderId): array
     {
         try {

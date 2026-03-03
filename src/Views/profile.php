@@ -212,9 +212,9 @@
     </div>
 
     <div class="avatar-section">
-        <?php if (!empty($user['avatar'])): ?>
-            <img src="uploads/avatars/<?php echo htmlspecialchars($user['avatar']); ?>"
-                 alt="Аватар <?php echo htmlspecialchars($user['name']); ?>"
+        <?php if ($user && $user->getAvatar()): ?>
+            <img src="uploads/avatars/<?php echo htmlspecialchars($user->getAvatar()); ?>"
+                 alt="Аватар <?php echo htmlspecialchars($user->getName()); ?>"
                  class="avatar" id="userAvatar">
         <?php else: ?>
             <img src="images/default-avatar.png"
@@ -244,7 +244,7 @@
         <div class="info-group">
             <label>Имя:</label>
             <div class="value" id="nameDisplay">
-                <?php echo htmlspecialchars($user['name'] ?? 'Не указано'); ?>
+                <?php echo htmlspecialchars($user ? $user->getName() : 'Не указано'); ?>
             </div>
             <?php if (isset($errors['name'])): ?>
                 <div class="error-message"><?php echo htmlspecialchars(is_array($errors['name']) ? implode(', ', $errors['name']) : $errors['name']); ?></div>
@@ -255,7 +255,7 @@
             <div class="edit-form" id="nameEditForm">
                 <form action="/profile" method="POST">
                     <div class="form-group">
-                        <input type="text" name="name" value="<?php echo htmlspecialchars($user['name'] ?? ''); ?>" required>
+                        <input type="text" name="name" value="<?php echo htmlspecialchars($user ? $user->getName() : ''); ?>" required>
                     </div>
                     <div class="form-actions">
                         <button type="submit" name="update_name" class="btn btn-save">Сохранить</button>
@@ -269,7 +269,7 @@
         <div class="info-group">
             <label>Электронная почта:</label>
             <div class="value" id="emailDisplay">
-                <?php echo htmlspecialchars($user['email'] ?? 'Не указан'); ?>
+                <?php echo htmlspecialchars($user ? $user->getEmail() : 'Не указан'); ?>
             </div>
             <?php if (isset($errors['email'])): ?>
                 <div class="error-message"><?php echo htmlspecialchars(is_array($errors['email']) ? implode(', ', $errors['email']) : $errors['email']); ?></div>
@@ -280,7 +280,7 @@
             <div class="edit-form" id="emailEditForm">
                 <form action="/profile" method="POST">
                     <div class="form-group">
-                        <input type="email" name="email" value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>" required>
+                        <input type="email" name="email" value="<?php echo htmlspecialchars($user ? $user->getEmail() : ''); ?>" required>
                     </div>
                     <div class="form-actions">
                         <button type="submit" name="update_email" class="btn btn-save">Сохранить</button>

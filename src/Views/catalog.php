@@ -248,14 +248,14 @@
     <?php foreach ($products as $product) : ?>
         <div class="product">
             <div class="product-img">
-                <img src="<?php echo $product['image_url'] ?>" alt="<?php echo $product['name'] ?>">
+                <img src="<?php echo htmlspecialchars($product->getImageUrl() ?? ''); ?>" alt="<?php echo htmlspecialchars($product->getName() ?? ''); ?>">
             </div>
-            <div class="product-title"><?php echo $product['name'] ?></div>
-            <div class="product-price"><?php echo $product['price'] ?> ₽</div>
-            <div class="product-description"><?php echo $product['description'] ?></div>
+            <div class="product-title"><?php echo htmlspecialchars($product->getName() ?? ''); ?></div>
+            <div class="product-price"><?php echo htmlspecialchars($product->getPrice() ?? ''); ?> ₽</div>
+            <div class="product-description"><?php echo htmlspecialchars($product->getDescription() ?? ''); ?></div>
             <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
                 <form action="/add-to-cart" method="POST" style="margin: 0;">
-                    <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+                    <input type="hidden" name="product_id" value="<?php echo $product->getId(); ?>">
                     <input type="hidden" name="quantity" value="1">
                     <button type="submit" class="buy-btn">В корзину</button>
                 </form>

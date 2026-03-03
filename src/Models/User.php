@@ -1,11 +1,26 @@
 <?php
 namespace Models;
 
-//use Exception;
 use PDO;
-//use PDOException;
+use PDOException;
 
-class User extends Model {
+class User extends Model
+{
+    private $id;
+    private $name;
+    private $email;
+    private $password;
+    private $avatar;
+
+
+    private function fillFromArray(array $row): void
+    {
+        $this->id = isset($row['id']) ? (int) $row['id'] : null;
+        $this->name = $row['name'] ?? null;
+        $this->email = $row['email'] ?? null;
+        $this->password = $row['password'] ?? null;
+        $this->avatar = $row['avatar'] ?? null;
+    }
 
     public function emailExists(string $email, ?int $excludeUserId = null): bool {
         try {
@@ -23,35 +38,45 @@ class User extends Model {
         }
     }
 
-    // Метод для получения пользователя по email
-    public function getByEmail($email) {
+    public function getByEmail(string $email): ?self
+    {
         try {
             $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = :email");
             $stmt->execute([':email' => $email]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                return null;
+            }
+            $obj = new self($this->pdo);
+            $obj->fillFromArray($row);
+            return $obj;
         } catch (PDOException $e) {
             error_log("Database error in User::getByEmail: " . $e->getMessage());
             return null;
         }
     }
 
-    // Метод для получения пользователя по ID
-    public function getById($userId) {
+    public function getById($userId): ?self
+    {
         try {
             $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = :id");
             $stmt->execute([':id' => $userId]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                return null;
+            }
+            $obj = new self($this->pdo);
+            $obj->fillFromArray($row);
+            return $obj;
         } catch (PDOException $e) {
             error_log("Database error in User::getById: " . $e->getMessage());
             return null;
         }
     }
 
-    // Метод для создания пользователя
     public function create($data) {
         try {
-            // Проверяем подключение к БД
-            if (!$this->pdo) {
+            if (!$this->pdo) { // Проверяем подключение к БД
                 error_log("User::create: PDO connection is null");
                 return false;
             }
@@ -81,7 +106,6 @@ class User extends Model {
                 return true;
             } else {
                 // Если execute вернул true, но rowCount = 0, значит запись не была вставлена
-                // (например, из-за ограничения UNIQUE на email)
                 $errorInfo = $stmt->errorInfo();
                 error_log("User::create: execute returned true but rowCount = 0. Email: " . $data['email'] . " | ErrorInfo: " . implode(' | ', $errorInfo));
                 return false;
@@ -89,8 +113,6 @@ class User extends Model {
         } catch (PDOException $e) {
             $errorCode = $e->getCode();
             $errorMessage = $e->getMessage();
-            
-            // Проверяем, не является ли это ошибкой дубликата (PostgreSQL код 23505)
             if ($errorCode == '23505' || strpos($errorMessage, 'duplicate key') !== false || strpos($errorMessage, 'unique constraint') !== false) {
                 error_log("User::create: Duplicate email detected: " . $data['email']);
                 // Возвращаем специальный код для дубликата
@@ -149,17 +171,39 @@ class User extends Model {
         }
     }
 
-    // Метод для проверки пароля
-    public function verifyPassword($userId, $currentPassword) {
+    public function verifyPassword($userId, $currentPassword): bool
+    {
         try {
             $user = $this->getById($userId);
-            if ($user && password_verify($currentPassword, $user['password'])) {
-                return true;
-            }
-            return false;
+            return $user && password_verify($currentPassword, $user->getPassword());
         } catch (PDOException $e) {
             error_log("Database error in User::verifyPassword: " . $e->getMessage());
             return false;
         }
+    }
+
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    public function getEmail()
+    {
+        return $this->email;
+    }
+
+    public function getPassword()
+    {
+        return $this->password;
+    }
+
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    public function getAvatar()
+    {
+        return $this->avatar;
     }
 }

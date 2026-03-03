@@ -131,36 +131,36 @@
             <?php foreach ($orders as $order): ?>
                 <div class="order-card">
                     <div class="order-header">
-                        <span class="order-number">Заказ №<?php echo (int) $order['id']; ?></span>
-                        <span class="order-status"><?php echo htmlspecialchars($order['status'] ?? 'В обработке'); ?></span>
+                        <span class="order-number">Заказ №<?php echo $order->getId(); ?></span>
+                        <span class="order-status"><?php echo htmlspecialchars($order->getStatus() ?? 'В обработке'); ?></span>
                     </div>
 
                     <div class="field">
                         <div class="field-label">Имя</div>
-                        <div class="field-value"><?php echo htmlspecialchars($order['name'] ?? 'Не указано'); ?></div>
+                        <div class="field-value"><?php echo htmlspecialchars($order->getName() ?? 'Не указано'); ?></div>
                     </div>
 
                     <div class="field">
                         <div class="field-label">Телефон</div>
-                        <div class="field-value"><?php echo htmlspecialchars($order['phone'] ?? 'Не указан'); ?></div>
+                        <div class="field-value"><?php echo htmlspecialchars($order->getPhone() ?? 'Не указан'); ?></div>
                     </div>
 
                     <div class="field">
                         <div class="field-label">Адрес доставки</div>
-                        <div class="field-value"><?php echo htmlspecialchars($order['address'] ?? 'Не указан'); ?></div>
+                        <div class="field-value"><?php echo htmlspecialchars($order->getAddress() ?? 'Не указан'); ?></div>
                     </div>
 
                     <div class="field">
                         <div class="field-label">Комментарий к заказу</div>
-                        <div class="field-value"><?php echo htmlspecialchars($order['comment'] ?: 'Нет комментария'); ?></div>
+                        <div class="field-value"><?php echo htmlspecialchars($order->getComment() ?: 'Нет комментария'); ?></div>
                     </div>
 
                     <div class="products-list">
                         <div class="products-title">Товары в заказе (order_products):</div>
-                        <?php if (empty($order['products'])): ?>
+                        <?php $orderProducts = $order->getProducts(); if (empty($orderProducts)): ?>
                             <div class="product-item">Нет товаров</div>
                         <?php else: ?>
-                            <?php foreach ($order['products'] as $product): ?>
+                            <?php foreach ($orderProducts as $product): ?>
                                 <div class="product-item">
                                     • <?php echo htmlspecialchars($product['name']); ?> — <?php echo number_format((float) $product['price'], 2, '.', ' '); ?> ₽ × <?php echo (int) $product['amount']; ?>
                                 </div>

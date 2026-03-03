@@ -2,7 +2,6 @@
 
 use Controllers\CartController;
 use Controllers\CatalogController;
-use Controllers\CheckoutController;
 use Controllers\OrderController;
 use Controllers\UserController;
 use Core\App;
@@ -10,34 +9,25 @@ use Core\App;
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
-$autoload = function (string $className)
-{
-    $path = str_replace('\\', '/', $className);
-    $path =  "./../$path.php";
-    if (file_exists($path)) {
-        require_once $path;
-        return true;
-    }
-    return false;
-};
-spl_autoload_register($autoload);
+require __DIR__ . '/../Core/Autoload/Autoloader.php';
+$path = dirname(__DIR__);
+\Core\Autoload\Autoloader::register($path);
 
 $app = new App();
-$app->addRoute('/registration', 'GET', UserController::class , 'showRegistrationForm');
-$app->addRoute('/registration', 'POST', UserController::class , 'handleRegistration');
-$app->addRoute('/login', 'GET', UserController::class , 'showLoginForm');
-$app->addRoute('/login', 'POST', UserController::class , 'handleLogin');
-$app->addRoute('/catalog', 'GET', CatalogController::class , 'showCatalog');
-$app->addRoute('/profile', 'GET', UserController::class , 'showProfile');
-$app->addRoute('/profile', 'POST', UserController::class , 'handleProfileUpdate');
-$app->addRoute('/upload_avatar', 'POST', UserController::class , 'handleAvatarUpload');
-$app->addRoute('/cart', 'GET', CartController::class , 'showCart');
-$app->addRoute('/add-to-cart', 'POST', CartController::class , 'handleAddToCart');
-$app->addRoute('/update-cart', 'POST', CartController::class , 'handleUpdateCart');
-$app->addRoute('/remove-from-cart', 'POST', CartController::class , 'handleRemoveFromCart');
-$app->addRoute('/checkout', 'GET', CheckoutController::class, 'showCheckout');
-$app->addRoute('/checkout', 'POST', CheckoutController::class, 'handleCheckout');
-$app->addRoute('/orders', 'GET', OrderController::class, 'showOrders');
-$app->addRoute('/logout', 'GET', UserController::class , 'logout');
+$app->get('/registration', UserController::class , 'showRegistrationForm');
+$app->post('/registration', UserController::class , 'handleRegistration');
+$app->get('/login', UserController::class , 'showLoginForm');
+$app->post('/login',  UserController::class , 'handleLogin');
+$app->get('/catalog',  CatalogController::class , 'showCatalog');
+$app->get('/profile',  UserController::class , 'showProfile');
+$app->post('/profile', UserController::class , 'handleProfileUpdate');
+$app->post('/upload_avatar',  UserController::class , 'handleAvatarUpload');
+$app->get('/cart', CartController::class , 'showCart');
+$app->post('/add-to-cart', CartController::class , 'handleAddToCart');
+$app->post('/update-cart', CartController::class , 'handleUpdateCart');
+$app->post('/remove-from-cart', CartController::class , 'handleRemoveFromCart');
+$app->get('/checkout', OrderController::class, 'showCheckout');
+$app->post('/checkout', OrderController::class, 'handleCheckout');
+$app->get('/orders', OrderController::class, 'showOrders');
+$app->get('/logout', UserController::class , 'logout');
 $app->run();

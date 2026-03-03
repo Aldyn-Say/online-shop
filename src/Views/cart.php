@@ -71,7 +71,7 @@
             display: inline-block;
             margin-top: 20px;
             padding: 12px 30px;
-            background: #4CAF50;
+            background: #32CD32;
             color: white;
             text-decoration: none;
             border-radius: 5px;
@@ -79,7 +79,7 @@
         }
 
         .cart-empty a:hover {
-            background: #45a049;
+            background: #32CD32;
         }
 
         .cart-items {
@@ -221,12 +221,12 @@
         }
 
         .btn-checkout {
-            background: #4CAF50;
+            background: #32CD32;
             color: white;
         }
 
         .btn-checkout:hover {
-            background: #45a049;
+            background: #32CD32;
         }
 
         .navbar {
@@ -300,18 +300,14 @@
     </style>
 </head>
 <body>
-<?php
-if (!isset($_SESSION)) {
-    session_start();
-}
-$userName = $_SESSION['user_name'] ?? 'Пользователь';
-?>
+
 <div class="navbar">
     <h2>Онлайн магазин</h2>
     <div class="navbar-links">
         <a href="/catalog" class="catalog-link">Каталог</a>
         <a href="/profile">Профиль</a>
         <a href="/cart">Корзина</a>
+        <a href="/orders">Мои заказы</a>
     </div>
 </div>
 <div class="cart-container">
@@ -376,28 +372,27 @@ $userName = $_SESSION['user_name'] ?? 'Пользователь';
             </div>
             <div class="cart-actions">
                 <a href="/catalog" class="btn btn-continue">Продолжить покупки</a>
-                <button class="btn btn-checkout" onclick="alert('Функция оформления заказа будет добавлена позже')">Оформить заказ</button>
+                <a href="/checkout" class="btn btn-checkout">Оформить заказ</a>
             </div>
         </div>
     <?php endif; ?>
 </div>
 
 <script>
-    function increaseQuantity(productId) {
-        const form = event.target.closest('form');
-        const input = form.querySelector('input[name="quantity"]');
-        input.value = parseInt(input.value) + 1;
+    function changeQuantity(productId, delta) {
+        var form = document.querySelector('form[action="/update-cart"] input[name="product_id"][value="' + productId + '"]');
+        if (!form) return;
+        form = form.closest('form');
+        var qtyInput = form.querySelector('input[name="quantity"]');
+        if (!qtyInput) return;
+        var val = parseInt(qtyInput.value, 10) || 1;
+        val = val + delta;
+        if (val < 1) val = 1;
+        qtyInput.value = val;
         form.submit();
     }
-
-    function decreaseQuantity(productId) {
-        const form = event.target.closest('form');
-        const input = form.querySelector('input[name="quantity"]');
-        if (parseInt(input.value) > 1) {
-            input.value = parseInt(input.value) - 1;
-            form.submit();
-        }
-    }
+    function increaseQuantity(productId) { changeQuantity(productId, 1); }
+    function decreaseQuantity(productId) { changeQuantity(productId, -1); }
 </script>
 </body>
 </html>

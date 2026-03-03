@@ -224,10 +224,10 @@
 
         <div class="avatar-upload">
             <?php if (isset($errors['avatar'])): ?>
-                <div class="error-message"><?php echo htmlspecialchars($errors['avatar']); ?></div>
+                <div class="error-message"><?php echo htmlspecialchars(is_array($errors['avatar']) ? implode(', ', $errors['avatar']) : $errors['avatar']); ?></div>
             <?php endif; ?>
             <?php if (isset($success['avatar'])): ?>
-                <div class="success-message"><?php echo htmlspecialchars($success['avatar']); ?></div>
+                <div class="success-message"><?php echo htmlspecialchars(is_array($success['avatar']) ? implode(', ', $success['avatar']) : $success['avatar']); ?></div>
             <?php endif; ?>
             <form action="/upload_avatar" method="POST" enctype="multipart/form-data" id="avatarForm">
                 <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;"
@@ -247,10 +247,10 @@
                 <?php echo htmlspecialchars($user['name'] ?? 'Не указано'); ?>
             </div>
             <?php if (isset($errors['name'])): ?>
-                <div class="error-message"><?php echo htmlspecialchars($errors['name']); ?></div>
+                <div class="error-message"><?php echo htmlspecialchars(is_array($errors['name']) ? implode(', ', $errors['name']) : $errors['name']); ?></div>
             <?php endif; ?>
             <?php if (isset($success['name'])): ?>
-                <div class="success-message"><?php echo htmlspecialchars($success['name']); ?></div>
+                <div class="success-message"><?php echo htmlspecialchars(is_array($success['name']) ? implode(', ', $success['name']) : $success['name']); ?></div>
             <?php endif; ?>
             <div class="edit-form" id="nameEditForm">
                 <form action="/profile" method="POST">
@@ -272,10 +272,10 @@
                 <?php echo htmlspecialchars($user['email'] ?? 'Не указан'); ?>
             </div>
             <?php if (isset($errors['email'])): ?>
-                <div class="error-message"><?php echo htmlspecialchars($errors['email']); ?></div>
+                <div class="error-message"><?php echo htmlspecialchars(is_array($errors['email']) ? implode(', ', $errors['email']) : $errors['email']); ?></div>
             <?php endif; ?>
             <?php if (isset($success['email'])): ?>
-                <div class="success-message"><?php echo htmlspecialchars($success['email']); ?></div>
+                <div class="success-message"><?php echo htmlspecialchars(is_array($success['email']) ? implode(', ', $success['email']) : $success['email']); ?></div>
             <?php endif; ?>
             <div class="edit-form" id="emailEditForm">
                 <form action="/profile" method="POST">
@@ -297,10 +297,10 @@
                 ••••••••
             </div>
             <?php if (isset($errors['password'])): ?>
-                <div class="error-message"><?php echo htmlspecialchars($errors['password']); ?></div>
+                <div class="error-message"><?php echo htmlspecialchars(is_array($errors['password']) ? implode(', ', $errors['password']) : $errors['password']); ?></div>
             <?php endif; ?>
             <?php if (isset($success['password'])): ?>
-                <div class="success-message"><?php echo htmlspecialchars($success['password']); ?></div>
+                <div class="success-message"><?php echo htmlspecialchars(is_array($success['password']) ? implode(', ', $success['password']) : $success['password']); ?></div>
             <?php endif; ?>
             <div class="edit-form" id="passwordEditForm">
                 <form action="/profile" method="POST">
@@ -326,54 +326,29 @@
         <button class="btn btn-edit" onclick="editName()">Изменить имя</button>
         <button class="btn btn-edit" onclick="editEmail()">Изменить email</button>
         <button class="btn btn-change-password" onclick="editPassword()">Сменить пароль</button>
-        <button class="btn btn-logout" onclick="logout()">Выйти</button>
+        <a href="/logout" class="btn btn-logout" style="text-decoration: none; color: inherit; line-height: 1;">Выйти</a>
     </div>
 </div>
 
 <script>
-    function editName() {
-        document.getElementById('nameDisplay').style.display = 'none';
-        document.getElementById('nameEditForm').classList.add('active');
-    }
-
-    function editEmail() {
-        document.getElementById('emailDisplay').style.display = 'none';
-        document.getElementById('emailEditForm').classList.add('active');
-    }
-
-    function editPassword() {
-        document.getElementById('passwordDisplay').style.display = 'none';
-        document.getElementById('passwordEditForm').classList.add('active');
-    }
-
-    function cancelEdit(type) {
-        if (type === 'name') {
-            document.getElementById('nameDisplay').style.display = 'block';
-            document.getElementById('nameEditForm').classList.remove('active');
-        } else if (type === 'email') {
-            document.getElementById('emailDisplay').style.display = 'block';
-            document.getElementById('emailEditForm').classList.remove('active');
-        } else if (type === 'password') {
-            document.getElementById('passwordDisplay').style.display = 'block';
-            document.getElementById('passwordEditForm').classList.remove('active');
-            // Очистка полей формы
-            document.querySelector('#passwordEditForm form').reset();
-        }
-    }
-
-    function logout() {
-        if (confirm('Вы уверены, что хотите выйти?')) {
-            window.location.href = 'logout.php';
-        }
-    }
-
-    // Обновление аватара после загрузки
-    document.getElementById('avatarForm').addEventListener('submit', function() {
-        setTimeout(function() {
-            location.reload();
-        }, 1000);
-    });
+function editName() {
+    document.getElementById('nameDisplay').style.display = 'none';
+    document.getElementById('nameEditForm').classList.add('active');
+}
+function editEmail() {
+    document.getElementById('emailDisplay').style.display = 'none';
+    document.getElementById('emailEditForm').classList.add('active');
+}
+function editPassword() {
+    document.getElementById('passwordDisplay').style.display = 'none';
+    document.getElementById('passwordEditForm').classList.add('active');
+}
+function cancelEdit(field) {
+    var display = document.getElementById(field + 'Display');
+    var form = document.getElementById(field + 'EditForm');
+    if (display) display.style.display = '';
+    if (form) form.classList.remove('active');
+}
 </script>
-
 </body>
 </html>

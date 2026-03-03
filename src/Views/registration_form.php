@@ -120,27 +120,37 @@
 <body>
 <div class="registration-container">
     <h1 class="registration-title">Регистрация</h1>
+    <?php if (!empty($registration_success)): ?>
+        <div style="color: #2e7d32; margin-bottom: 15px; padding: 10px; background: #e8f5e9; border-radius: 5px;">
+            <?php echo htmlspecialchars($registration_success); ?>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($errors['general'])): ?>
+        <div style="color: brown; margin-bottom: 15px; padding: 10px; background: #ffebee; border-radius: 5px;">
+            <?php echo htmlspecialchars(is_array($errors['general']) ? implode(', ', $errors['general']) : $errors['general']); ?>
+        </div>
+    <?php endif; ?>
     <form action="/registration" method="POST">
         <div class="form-group">
             <label for="name">Имя</label>
             <?php if (isset($errors['name'])): ?>
-            <label style="color: brown" ><?php echo $errors['name']; ?></label>
+            <label style="color: brown"><?php echo htmlspecialchars(is_array($errors['name']) ? implode(', ', $errors['name']) : $errors['name']); ?></label>
             <?php endif; ?>
-            <input type="text" id="name" name="name" placeholder="Введите ваше имя">
+            <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($old_registration_data['name'] ?? ''); ?>" placeholder="Введите ваше имя">
         </div>
 
         <div class="form-group">
             <label for="email">Email</label>
             <?php if (isset($errors['email'])): ?>
-            <label style="color: brown" ><?php echo $errors['email']; ?></label>
+            <label style="color: brown"><?php echo htmlspecialchars(is_array($errors['email']) ? implode(', ', $errors['email']) : $errors['email']); ?></label>
             <?php endif; ?>
-            <input type="text" id="email" name="email" placeholder="Введите ваш email">
+            <input type="text" id="email" name="email" value="<?php echo htmlspecialchars($old_registration_data['email'] ?? ''); ?>" placeholder="Введите ваш email">
         </div>
 
         <div class="form-group">
             <label for="password">Пароль</label>
             <?php if (isset($errors['password'])): ?>
-            <label style="color: brown" ><?php echo $errors['password']; ?></label>
+            <label style="color: brown"><?php echo htmlspecialchars(is_array($errors['password']) ? implode(', ', $errors['password']) : $errors['password']); ?></label>
             <?php endif; ?>
             <input type="password" id="password" name="password" placeholder="Введите пароль">
         </div>
@@ -148,7 +158,7 @@
         <div class="form-group">
             <label for="password_confirm">Подтвердите пароль</label>
             <?php if (isset($errors['password_confirm'])): ?>
-                <label style="color: brown" ><?php echo $errors['password_confirm']; ?></label>
+                <label style="color: brown"><?php echo htmlspecialchars(is_array($errors['password_confirm']) ? implode(', ', $errors['password_confirm']) : $errors['password_confirm']); ?></label>
             <?php endif; ?>
             <input type="password" id="password_confirm" name="password_confirm" placeholder="Повторите пароль">
         </div>

@@ -83,18 +83,47 @@
         }
 
         .buy-btn {
-            background-color: #7B3F00;
-            color: white;
+            background: linear-gradient(145deg, #3A281C, #5C3E2B); /* Глубокий шоколад */
+            color: #F0E0C0; /* Золотистый текст */
             border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
+            padding: 14px 24px;
+            border-radius: 50px;
             width: 100%;
             font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(58, 40, 28, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .buy-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(240, 224, 192, 0.2), transparent);
+            transition: left 0.6s;
+            z-index: -1;
         }
 
         .buy-btn:hover {
-            background-color: #45a049;
+            background: linear-gradient(145deg, #4D3728, #6F4E37); /* Светлее */
+            box-shadow: 0 10px 22px rgba(90, 60, 40, 0.5);
+            transform: translateY(-4px);
+        }
+
+
+        .buy-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            background: linear-gradient(145deg, #2C1E14, #4A3322);
         }
 
         .navbar {
@@ -185,22 +214,6 @@
     </style>
 </head>
 <body>
-<?php
-if (!isset($_SESSION)) {
-    session_start();
-}
-$userName = $_SESSION['user_name'] ?? 'Пользователь';
-$cartMessage = $_SESSION['cart_message'] ?? null;
-unset($_SESSION['cart_message']);
-
-// Получаем количество товаров в корзине
-$cartCount = 0;
-if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_SESSION['user_id'])) {
-    require_once '../Controllers/CartController.php';
-    $cart = new CartController();
-    $cartCount = $cart->getCartUniqueItemsCount($_SESSION['user_id']);
-}
-?>
 <div class="navbar">
     <h2>Онлайн магазин</h2>
     <div class="navbar-links">
@@ -214,6 +227,7 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_
                     <span class="cart-badge"><?php echo $cartCount; ?></span>
                 <?php endif; ?>
             </a>
+            <a href="/order">Мои заказы</a>
             <a href="/logout">Выйти</a>
         <?php else: ?>
             <a href="/login">Войти</a>
@@ -221,15 +235,16 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_
     </div>
 </div>
 
-<?php if ($cartMessage): ?>
-    <div class="message message-<?php echo $cartMessage['type']; ?>">
-        <?php echo htmlspecialchars($cartMessage['text']); ?>
-    </div>
-<?php endif; ?>
+<?php //if ($cartMessage): ?>
+<!--    <div class="message message---><?php //echo $cartMessage['type']; ?><!--">-->
+<!--        --><?php //echo htmlspecialchars($cartMessage['text']); ?>
+<!--    </div>-->
+<?php //endif; ?>
 
 <h1>Каталог товаров</h1>
 
 <div class="catalog">
+    <?php if (isset($products) && !empty($products)): ?>
     <?php foreach ($products as $product) : ?>
         <div class="product">
             <div class="product-img">
@@ -249,6 +264,9 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_
             <?php endif; ?>
         </div>
     <?php endforeach; ?>
+    <?php else: ?>
+        <p>Товары не найдены</p>
+    <?php endif; ?>
 </div>
 </body>
 </html>

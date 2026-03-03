@@ -214,23 +214,25 @@
             <p>Введите ваши данные для входа</p>
         </div>
 
-        <div class="error-message" id="errorMessage">
-            Неверный email или пароль. Попробуйте снова.
+        <?php if (!empty($errors['general'])): ?>
+        <div class="error-message" id="errorMessage" style="display: block;">
+            <?php echo htmlspecialchars(is_array($errors['general']) ? implode(', ', $errors['general']) : $errors['general']); ?>
         </div>
+        <?php endif; ?>
 
         <form id="loginForm" action="/login" method="POST">
             <div class="input-group">
                 <label for="email">Email</label>
                 <?php if (isset($errors['email'])): ?>
-                    <label style="color: brown" ><?php echo $errors['email']; ?></label>
+                    <label style="color: brown"><?php echo htmlspecialchars(is_array($errors['email']) ? implode(', ', $errors['email']) : $errors['email']); ?></label>
                 <?php endif; ?>
-                <input type="email" id="email" name="email" placeholder="Введите ваш email" required>
+                <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($old_login_data['email'] ?? ''); ?>" placeholder="Введите ваш email" required>
             </div>
 
             <div class="input-group">
                 <label for="password">Пароль</label>
                 <?php if (isset($errors['password'])): ?>
-                    <label style="color: brown" ><?php echo $errors['password']; ?></label>
+                    <label style="color: brown"><?php echo htmlspecialchars(is_array($errors['password']) ? implode(', ', $errors['password']) : $errors['password']); ?></label>
                 <?php endif; ?>
                 <input type="password" id="password" name="password" placeholder="Введите ваш пароль" required>
             </div>
@@ -246,7 +248,7 @@
         </form>
 
         <div class="register-link">
-            Ещё нет аккаунта? <a href="#">Зарегистрироваться</a>
+            Ещё нет аккаунта? <a href="/registration">Зарегистрироваться</a>
         </div>
     </div>
 </div>

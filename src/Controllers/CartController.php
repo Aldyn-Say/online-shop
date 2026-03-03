@@ -1,14 +1,17 @@
 <?php
-require_once '../Models/Cart.php';
+namespace Controllers;
 
-class CartController
+use Models\Cart;
+use Models\Model;
+
+class CartController extends Model
 {
-    private $model;
+    protected $model;
 
-    public function __construct($pdo = null)
+    public function __construct()
     {
-        // Создаем модель, передавая подключение к БД
-        $this->model = new CartModel($pdo);
+        parent::__construct();
+        $this->model = new Cart($this->pdo);
     }
 
     public function addToCart($userId, $productId, $quantity = 1): array
@@ -46,36 +49,188 @@ class CartController
         return $this->model->getCartUniqueItemsCount($userId);
     }
 
-    // Дополнительные методы контроллера для работы с HTTP-запросами
 
-    public function handleAddToCartRequest() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return ['success' => false, 'message' => 'Неверный метод запроса'];
+    public function showCart() {
+        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+            return ['redirect' => '/login'];
         }
 
-        $userId = $_POST['user_id'] ?? $_SESSION['user_id'] ?? null;
-        $productId = $_POST['product_id'] ?? null;
-        $quantity = $_POST['quantity'] ?? 1;
-
-        if (!$userId || !$productId) {
-            return ['success' => false, 'message' => 'Не указаны обязательные параметры'];
+        $userId = $_SESSION['user_id'] ?? null;
+        if (empty($userId)) {
+            return ['redirect' => '/login'];
         }
 
-        return $this->addToCart($userId, $productId, $quantity);
-    }
-
-    public function renderCartView($userId) {
         $cartItems = $this->getCartItems($userId);
         $cartTotal = $this->getCartTotal($userId);
-        $itemsCount = $this->getCartItemsCount($userId);
+        $cartMessage = $_SESSION['cart_message'] ?? null;
+        unset($_SESSION['cart_message']);
 
-        // Здесь обычно идет рендеринг представления
-        // Например, require_once __DIR__ . '/../Views/cart.php';
+        require_once __DIR__ . '/../Views/cart.php';
+    }
 
-        return [
-            'items' => $cartItems,
-            'total' => $cartTotal,
-            'items_count' => $itemsCount
-        ];
+    public function handleAddToCart() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return ['redirect' => '/catalog'];
+        }
+
+        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) { //проверка авторизации
+            $_SESSION['cart_message'] = ['type' => 'error', 'text' => 'Необходимо войти в систему для добавления товаров в корзину'];
+            return ['redirect' => '/login'];
+        }
+
+        $userId = $_SESSION['user_id'] ?? null; //инициализвация
+        if (!$userId) {
+            $_SESSION['cart_message'] = ['type' => 'error', 'text' => 'Ошибка авторизации'];
+            return ['redirect' => '/login'];
+        }
+
+        $productId = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+        $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
+
+        $errors = [];
+
+        // Валидация
+        if ($productId <= 0) {
+            $errors[] = 'Не указан корректный товар';
+        }
+
+        if ($quantity <= 0) {
+            $errors[] = 'Количество должно быть больше нуля';
+        }
+
+        // Если ошибок нет - добавляем в корзину
+        if (empty($errors)) {
+            $result = $this->addToCart($userId, $productId, $quantity);
+
+            if ($result['success']) {
+                $_SESSION['cart_message'] = [
+                    'type' => 'success',
+                    'text' => $result['message']
+                ];
+            } else {
+                // Логирование ошибки
+                error_log("Error adding to cart: " . $result['message'] . " | User ID: " . $userId . " | Product ID: " . $productId);
+
+                $_SESSION['cart_message'] = [
+                    'type' => 'error',
+                    'text' => $result['message'] ?? 'Ошибка добавления товара в корзину'
+                ];
+            }
+        } else {
+            // Сохраняем ошибки валидации
+            $_SESSION['cart_message'] = [
+                'type' => 'error',
+                'text' => implode(', ', $errors)
+            ];
+        }
+
+        // Редирект
+        $redirectUrl = $_SERVER['HTTP_REFERER'] ?? '/catalog';
+        // Безопасный редирект
+        if (filter_var($redirectUrl, FILTER_VALIDATE_URL) === false) {
+            $redirectUrl = '/catalog';
+        }
+
+        return ['redirect' => $redirectUrl];
+    }
+
+    public function handleUpdateCart() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return ['redirect' => '/cart'];
+        }
+
+        if (!isset($_SESSION)) {
+            session_start();
+        }
+
+        // Проверка авторизации
+        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+            return ['redirect' => '/login'];
+        }
+
+        $userId = $_SESSION['user_id'];
+        $errors = [];
+        $success = [];
+
+        $productId = $_POST['product_id'] ?? null;
+        $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
+
+        // Валидация
+        if (empty($productId)) {
+            $errors[] = 'Не указан товар';
+        } elseif ($quantity < 1) {
+            $errors[] = 'Количество должно быть больше нуля';
+        } else {
+            // Обновление количества товара
+            $result = $this->updateCartItemQuantity($userId, $productId, $quantity);
+
+        }
+
+        // Сохранение сообщений в сессию
+        if (!empty($success)) {
+            $_SESSION['cart_message'] = [
+                'type' => 'success',
+                'text' => implode(', ', $success)
+            ];
+        } elseif (!empty($errors)) {
+            $_SESSION['cart_message'] = [
+                'type' => 'error',
+                'text' => implode(', ', $errors)
+            ];
+        }
+
+        // Редирект обратно на корзину
+        return ['redirect' => '/cart'];
+    }
+
+    public function handleRemoveFromCart() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return ['redirect' => '/cart'];
+        }
+
+        if (!isset($_SESSION)) {
+            session_start();
+        }
+
+        // Проверка авторизации
+        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+            return ['redirect' => '/login'];
+        }
+
+        $userId = $_SESSION['user_id'];
+        $errors = [];
+        $success = [];
+
+        $productId = $_POST['product_id'] ?? null;
+
+        // Валидация
+        if (empty($productId)) {
+            $errors[] = 'Не указан товар';
+        } else {
+            // Удаление товара из корзины
+            $result = $this->removeFromCart($userId, $productId);
+
+            if (isset($result['success']) && $result['success']) {
+                $success[] = $result['message'] ?? 'Товар успешно удален из корзины';
+            } else {
+                $errors[] = $result['message'] ?? 'Ошибка удаления товара из корзины';
+            }
+        }
+
+        // Сохранение сообщений в сессию
+        if (!empty($success)) {
+            $_SESSION['cart_message'] = [
+                'type' => 'success',
+                'text' => implode(', ', $success)
+            ];
+        } elseif (!empty($errors)) {
+            $_SESSION['cart_message'] = [
+                'type' => 'error',
+                'text' => implode(', ', $errors)
+            ];
+        }
+
+        // Редирект обратно на корзину
+        return ['redirect' => '/cart'];
     }
 }

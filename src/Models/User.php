@@ -1,21 +1,19 @@
 <?php
-require_once 'database.php';
+namespace Models;
 
-class User {
-    private $pdo;
+//use Exception;
+use PDO;
+//use PDOException;
 
-    public function __construct($pdo = null) {
-        $this->pdo = $pdo ?? getDBConnection();
-    }
+class User extends Model {
 
-    // Метод для проверки существования email
-    public function emailExists($email, $excludeUserId = null) {
+    public function emailExists(string $email, ?int $excludeUserId = null): bool {
         try {
             if ($excludeUserId !== null) {
-                $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = :email AND id != :user_id");
-                $stmt->execute([':email' => $email, ':user_id' => $excludeUserId]);
+                $stmt = $this->pdo->prepare("SELECT 1 FROM users WHERE email = :email AND id != :id LIMIT 1");
+                $stmt->execute([':email' => $email, ':id' => $excludeUserId]);
             } else {
-                $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = :email");
+                $stmt = $this->pdo->prepare("SELECT 1 FROM users WHERE email = :email LIMIT 1");
                 $stmt->execute([':email' => $email]);
             }
             return $stmt->fetch() !== false;
@@ -52,14 +50,57 @@ class User {
     // Метод для создания пользователя
     public function create($data) {
         try {
+            // Проверяем подключение к БД
+            if (!$this->pdo) {
+                error_log("User::create: PDO connection is null");
+                return false;
+            }
+
             $stmt = $this->pdo->prepare("INSERT INTO users (name, email, password) VALUES (:name, :email, :password)");
-            return $stmt->execute([
+            
+            if (!$stmt) {
+                error_log("User::create: Failed to prepare statement. Error: " . implode(', ', $this->pdo->errorInfo()));
+                return false;
+            }
+
+            $result = $stmt->execute([
                 ':name' => $data['name'],
                 ':email' => $data['email'],
                 ':password' => $data['password']
             ]);
+            
+            if (!$result) {
+                $errorInfo = $stmt->errorInfo();
+                error_log("User::create: execute() failed. Error: " . implode(' | ', $errorInfo));
+                return false;
+            }
+            
+            // Проверяем, что запись действительно была вставлена
+            $rowCount = $stmt->rowCount();
+            if ($rowCount > 0) {
+                return true;
+            } else {
+                // Если execute вернул true, но rowCount = 0, значит запись не была вставлена
+                // (например, из-за ограничения UNIQUE на email)
+                $errorInfo = $stmt->errorInfo();
+                error_log("User::create: execute returned true but rowCount = 0. Email: " . $data['email'] . " | ErrorInfo: " . implode(' | ', $errorInfo));
+                return false;
+            }
         } catch (PDOException $e) {
-            error_log("Database error in User::create: " . $e->getMessage());
+            $errorCode = $e->getCode();
+            $errorMessage = $e->getMessage();
+            
+            // Проверяем, не является ли это ошибкой дубликата (PostgreSQL код 23505)
+            if ($errorCode == '23505' || strpos($errorMessage, 'duplicate key') !== false || strpos($errorMessage, 'unique constraint') !== false) {
+                error_log("User::create: Duplicate email detected: " . $data['email']);
+                // Возвращаем специальный код для дубликата
+                return ['success' => false, 'duplicate_email' => true];
+            }
+            
+            error_log("Database error in User::create: " . $errorMessage . " | Code: " . $errorCode);
+            return false;
+        } catch (Exception $e) {
+            error_log("General error in User::create: " . $e->getMessage() . " | Trace: " . $e->getTraceAsString());
             return false;
         }
     }

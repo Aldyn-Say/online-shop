@@ -1,14 +1,12 @@
 <?php
-require_once '../public/database.php';
+namespace Models;
 
-class CartModel {
-    private $pdo;
+use PDO;
+use PDOException;
 
-    public function __construct($pdo = null) {
-        $this->pdo = $pdo ?? getDBConnection();
-    }
+class Cart extends Model {
 
-    public function addToCart($userId, $productId, $quantity = 1) {
+    public function addToCart($userId, $productId, $quantity = 1) { //добавление товара в корзину
         try {
             // Приводим к целым числам
             $userId = intval($userId);
@@ -16,23 +14,23 @@ class CartModel {
             $quantity = intval($quantity);
 
             // Проверяем, есть ли уже такой товар в корзине
-            $stmt = $this->pdo->prepare("SELECT quantity FROM users_products WHERE user_id = :user_id AND product_id = :product_id");
+            $stmt = $this->pdo->prepare("SELECT quantity FROM user_products WHERE user_id = :user_id AND product_id = :product_id");
             $stmt->execute([':user_id' => $userId, ':product_id' => $productId]);
             $existingItem = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($existingItem) {
                 // Товар уже есть - увеличиваем quantity
                 $newQuantity = $existingItem['quantity'] + $quantity;
-                $stmt = $this->pdo->prepare("UPDATE users_products SET quantity = :quantity WHERE user_id = :user_id AND product_id = :product_id");
+                $stmt = $this->pdo->prepare("UPDATE user_products SET quantity = :quantity WHERE user_id = :user_id AND product_id = :product_id");
                 $stmt->execute([
                     ':quantity' => $newQuantity,
                     ':user_id' => $userId,
                     ':product_id' => $productId
                 ]);
-                return ['success' => true, 'message' => 'Количество товара обновлено', 'action' => 'updated'];
+                return ['success' => true, 'action' => 'updated', 'message' => 'Количество товара обновлено'];
             } else {
                 // Товара нет - создаем новую запись
-                $stmt = $this->pdo->prepare("INSERT INTO users_products (user_id, product_id, quantity) VALUES (:user_id, :product_id, :quantity)");
+                $stmt = $this->pdo->prepare("INSERT INTO user_products (user_id, product_id, quantity) VALUES (:user_id, :product_id, :quantity)");
                 $stmt->execute([
                     ':user_id' => $userId,
                     ':product_id' => $productId,
@@ -41,7 +39,7 @@ class CartModel {
 
                 if ($stmt->rowCount() > 0) {
                     error_log("CartModel: Successfully added product " . $productId . " for user " . $userId);
-                    return ['success' => true, 'message' => 'Товар добавлен в корзину', 'action' => 'added'];
+                    return ['success' => true, 'action' => 'added', 'message' => 'Товар добавлен в корзину'];
                 } else {
                     error_log("CartModel: Failed to insert - rowCount = 0");
                     return ['success' => false, 'message' => 'Не удалось добавить товар в корзину'];
@@ -53,7 +51,7 @@ class CartModel {
         }
     }
 
-    public function getCartItems($userId) {
+    public function getCartItems($userId) {    //получаем товары добавленные в корзину
         try {
             $userId = intval($userId);
 
@@ -68,7 +66,7 @@ class CartModel {
                     p.image_url,
                     p.description,
                     (up.quantity * p.price) as item_total
-                FROM users_products up
+                FROM user_products up
                 JOIN products p ON up.product_id = p.id
                 WHERE up.user_id = :user_id
                 ORDER BY up.id DESC
@@ -81,14 +79,14 @@ class CartModel {
         }
     }
 
-    public function updateCartItemQuantity($userId, $productId, $quantity) {
+    public function updateCartItemQuantity($userId, $productId, $quantity) { //обновляем количество товаров в корзине
         try {
             if ($quantity <= 0) {
                 // Если quantity <= 0, удаляем товар
                 return $this->removeFromCart($userId, $productId);
             }
 
-            $stmt = $this->pdo->prepare("UPDATE users_products SET quantity = :quantity WHERE user_id = :user_id AND product_id = :product_id");
+            $stmt = $this->pdo->prepare("UPDATE user_products SET quantity = :quantity WHERE user_id = :user_id AND product_id = :product_id");
             $stmt->execute([
                 ':quantity' => $quantity,
                 ':user_id' => $userId,
@@ -106,9 +104,9 @@ class CartModel {
         }
     }
 
-    public function removeFromCart($userId, $productId) {
+    public function removeFromCart($userId, $productId) { //удаление товара из корзины
         try {
-            $stmt = $this->pdo->prepare("DELETE FROM users_products WHERE user_id = :user_id AND product_id = :product_id");
+            $stmt = $this->pdo->prepare("DELETE FROM user_products WHERE user_id = :user_id AND product_id = :product_id");
             $stmt->execute([
                 ':user_id' => $userId,
                 ':product_id' => $productId
@@ -125,9 +123,9 @@ class CartModel {
         }
     }
 
-    public function clearCart($userId) {
+    public function clearCart($userId) { //очистка корзины
         try {
-            $stmt = $this->pdo->prepare("DELETE FROM users_products WHERE user_id = :user_id");
+            $stmt = $this->pdo->prepare("DELETE FROM user_products WHERE user_id = :user_id");
             $stmt->execute([':user_id' => $userId]);
 
             return ['success' => true, 'message' => 'Корзина очищена'];
@@ -137,11 +135,11 @@ class CartModel {
         }
     }
 
-    public function getCartTotal($userId) {
+    public function getCartTotal($userId) { //получение общей стоимости товаров в корзине
         try {
             $stmt = $this->pdo->prepare("
                 SELECT COALESCE(SUM(up.quantity * p.price), 0) as total
-                FROM users_products up
+                FROM user_products up
                 JOIN products p ON up.product_id = p.id
                 WHERE up.user_id = :user_id
             ");
@@ -154,9 +152,9 @@ class CartModel {
         }
     }
 
-    public function getCartItemsCount($userId) {
+    public function getCartItemsCount($userId) { //получение количества всех товаров
         try {
-            $stmt = $this->pdo->prepare("SELECT COALESCE(SUM(quantity), 0) as total_count FROM users_products WHERE user_id = :user_id");
+            $stmt = $this->pdo->prepare("SELECT COALESCE(SUM(quantity), 0) as total_count FROM user_products WHERE user_id = :user_id");
             $stmt->execute([':user_id' => $userId]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return intval($result['total_count'] ?? 0);
@@ -166,9 +164,9 @@ class CartModel {
         }
     }
 
-    public function getCartUniqueItemsCount($userId) {
+    public function getCartUniqueItemsCount($userId) { //получение количества уникальных товаров
         try {
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM users_products WHERE user_id = :user_id");
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM user_products WHERE user_id = :user_id");
             $stmt->execute([':user_id' => $userId]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return intval($result['count'] ?? 0);

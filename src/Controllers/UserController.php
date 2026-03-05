@@ -1,22 +1,22 @@
 <?php
+
 namespace Controllers;
 
-use Models\Model;
 use Models\User;
+use Service\AuthService;
 
-class UserController extends Model {
-    private $userModel;
+class UserController extends BaseController
+{
+    protected $userModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
-        $this->userModel = new User($this->pdo);
+        $this->userModel = new User();
     }
 
-    private function isAuthenticated(): bool {
-        return !empty($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
-    }
-
-    private function validateRegistration(array $data): array {
+    private function validateRegistration(array $data): array
+    {
         $errors = [];
         $nameErrors = $this->validateName($data['name'] ?? '');
         if (!empty($nameErrors)) {
@@ -33,10 +33,9 @@ class UserController extends Model {
         return $errors;
     }
 
-
-    private function validateName($name): array {    //валидация имени
+    private function validateName($name): array
+    {
         $errors = [];
-
         if (empty($name)) {
             $errors[] = 'Заполните поле имени';
         } elseif (strlen($name) < 2) {
@@ -44,13 +43,12 @@ class UserController extends Model {
         } elseif (!preg_match('/^[a-zA-Zа-яА-ЯёЁїЇєЄіІ\s\-]+$/u', $name)) {
             $errors[] = 'Имя может содержать только буквы, пробелы и дефисы';
         }
-
         return $errors;
     }
 
-    private function validateEmail($email, $checkUnique = false, $currentUserId = null): array {   //валидация почты
+    private function validateEmail($email, $checkUnique = false, $currentUserId = null): array
+    {
         $errors = [];
-
         if (empty($email)) {
             $errors[] = 'Введите Email';
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -58,31 +56,33 @@ class UserController extends Model {
         } elseif ($checkUnique && $this->userModel->emailExists($email, $currentUserId)) {
             $errors[] = 'Пользователь с таким email уже существует';
         }
-
         return $errors;
     }
 
-    private function validatePassword($password, $passwordConfirm = null):array {  //валидация пароля
+    private function validatePassword($password, $passwordConfirm = null): array
+    {
         $errors = [];
-
         if (empty($password)) {
             $errors[] = 'Пароль должен быть заполнен';
         } elseif (strlen($password) < 6) {
             $errors[] = 'Пароль должен быть минимум из 6 символов';
         }
-
         if ($passwordConfirm !== null && $password !== $passwordConfirm) {
             $errors[] = 'Пароли не совпадают';
         }
-
         return $errors;
     }
 
-    public function showRegistrationForm() { //показать страницу регистрации
+    public function showRegistrationForm()
+    {
+        $errors = [];
+        $old_registration_data = [];
+        $registration_success = null;
         require_once __DIR__ . '/../Views/registration_form.php';
     }
 
-    public function handleRegistration() { //регистрация
+    public function handleRegistration()
+    {
         $name = trim($_POST['name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
@@ -92,61 +92,70 @@ class UserController extends Model {
             'name' => $name,
             'email' => $email,
             'password' => $password,
-            'password_confirm' => $passwordConfirm
+            'password_confirm' => $passwordConfirm,
         ]);
 
         if (!empty($errors)) {
-            $_SESSION['registration_errors'] = $errors;
-            $_SESSION['old_registration_data'] = $_POST;
-            return ['redirect' => '/registration'];
+            $old_registration_data = $_POST;
+            $registration_success = null;
+            require_once __DIR__ . '/../Views/registration_form.php';
+            return null;
         }
 
         try {
             if ($this->userModel->emailExists($email)) {
-                $_SESSION['registration_errors'] = ['email' => ['Пользователь с таким email уже существует']];
-                $_SESSION['old_registration_data'] = $_POST;
-                return ['redirect' => '/registration'];
+                $errors = ['email' => ['Пользователь с таким email уже существует']];
+                $old_registration_data = $_POST;
+                $registration_success = null;
+                require_once __DIR__ . '/../Views/registration_form.php';
+                return null;
             }
 
             $result = $this->userModel->create([
                 'name' => $name,
                 'email' => $email,
-                'password' => password_hash($password, PASSWORD_DEFAULT)
+                'password' => password_hash($password, PASSWORD_DEFAULT),
             ]);
 
             if ($result === true) {
-                $_SESSION['registration_success'] = 'Регистрация прошла успешно! Теперь вы можете войти.';
                 return ['redirect' => '/login'];
-            } elseif (is_array($result) && isset($result['duplicate_email']) && $result['duplicate_email']) {
-                $_SESSION['registration_errors'] = ['email' => ['Пользователь с таким email уже существует']];
-                $_SESSION['old_registration_data'] = $_POST;
-                return ['redirect' => '/registration'];
-            } else {
-                if ($this->userModel->emailExists($email)) {
-                    $_SESSION['registration_errors'] = ['email' => ['Пользователь с таким email уже существует']];
-                } else {
-                    error_log("Registration failed: create() returned false for email: " . $email . " | Result: " . var_export($result, true));
-                    $_SESSION['registration_errors'] = ['general' => 'Ошибка при регистрации. Попробуйте позже или обратитесь к администратору.'];
-                }
-                $_SESSION['old_registration_data'] = $_POST;
-                return ['redirect' => '/registration'];
             }
+            if (is_array($result) && isset($result['duplicate_email']) && $result['duplicate_email']) {
+                $errors = ['email' => ['Пользователь с таким email уже существует']];
+                $old_registration_data = $_POST;
+                $registration_success = null;
+                require_once __DIR__ . '/../Views/registration_form.php';
+                return null;
+            }
+            if ($this->userModel->emailExists($email)) {
+                $errors = ['email' => ['Пользователь с таким email уже существует']];
+            } else {
+                error_log("Registration failed: create() returned false for email: " . $email);
+                $errors = ['general' => 'Ошибка при регистрации. Попробуйте позже или обратитесь к администратору.'];
+            }
+            $old_registration_data = $_POST;
+            $registration_success = null;
+            require_once __DIR__ . '/../Views/registration_form.php';
+            return null;
         } catch (\Exception $e) {
-            error_log("Registration error: " . $e->getMessage() . " | Trace: " . $e->getTraceAsString());
-            $_SESSION['registration_errors'] = ['general' => 'Ошибка сервера. Попробуйте позже.'];
-            $_SESSION['old_registration_data'] = $_POST;
-            return ['redirect' => '/registration'];
+            error_log("Registration error: " . $e->getMessage());
+            $errors = ['general' => 'Ошибка сервера. Попробуйте позже.'];
+            $old_registration_data = $_POST;
+            $registration_success = null;
+            require_once __DIR__ . '/../Views/registration_form.php';
+            return null;
         }
     }
 
-    public function showLoginForm() {
-        $errors = $_SESSION['login_errors'] ?? [];
-        $old_login_data = $_SESSION['old_login_data'] ?? ['email' => ''];
-        unset($_SESSION['login_errors'], $_SESSION['old_login_data']);
+    public function showLoginForm()
+    {
+        $errors = [];
+        $old_login_data = ['email' => ''];
         require_once __DIR__ . '/../Views/login.php';
     }
 
-    public function handleLogin() {
+    public function handleLogin()
+    {
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
 
@@ -156,100 +165,95 @@ class UserController extends Model {
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = ['Введите корректный email'];
         }
-
         if (empty($password)) {
             $errors['password'] = ['Введите пароль'];
         }
 
         if (!empty($errors)) {
-            $_SESSION['login_errors'] = $errors;
-            $_SESSION['old_login_data'] = ['email' => $email];
-            return ['redirect' => '/login'];
+            $old_login_data = ['email' => $email];
+            require_once __DIR__ . '/../Views/login.php';
+            return null;
         }
 
         try {
-            // Аутентификация
-            $user = $this->userModel->getByEmail($email);
-
-            if ($user && password_verify($password, $user->getPassword())) {
-                $_SESSION['user_id'] = $user->getId();
-                $_SESSION['user_name'] = $user->getName();
-                $_SESSION['user_email'] = $user->getEmail();
-                $_SESSION['logged_in'] = true;
-
-                // Перенаправляем на профиль
+            if ($this->authService->auth($email, $password)) {
+                $user = $this->userModel->getByEmail($email);
+                if ($user) {
+                    $this->authService->setLoginCookies(
+                        $user->getId(),
+                        $user->getName(),
+                        $user->getEmail()
+                    );
+                }
                 return ['redirect' => '/catalog'];
-            } else {
-                $_SESSION['login_errors'] = ['general' => ['Неверный email или пароль']];
-                $_SESSION['old_login_data'] = ['email' => $email];
-                return ['redirect' => '/login'];
-
             }
+            $errors['general'] = ['Неверный email или пароль'];
+            $old_login_data = ['email' => $email];
+            require_once __DIR__ . '/../Views/login.php';
+            return null;
         } catch (\Exception $e) {
             error_log("Login error: " . $e->getMessage());
-            $_SESSION['login_errors'] = ['general' => ['Ошибка сервера. Попробуйте позже.']];
-            return ['redirect' => '/login'];
+            $errors = ['general' => ['Ошибка сервера. Попробуйте позже.']];
+            $old_login_data = ['email' => $email];
+            require_once __DIR__ . '/../Views/login.php';
+            return null;
         }
     }
 
-    public function showProfile() {
-        if (!$this->isAuthenticated()) {
+    public function showProfile()
+    {
+        if (!$this->authService->check()) {
             return ['redirect' => '/login'];
         }
-        $userId = $_SESSION['user_id'];
+        $userId = $this->authService->getCurrentUserId();
         $user = $this->userModel->getById($userId);
         if (!$user) {
             return ['redirect' => '/login'];
         }
-        $errors = $_SESSION['profile_errors'] ?? [];
-        $success = $_SESSION['profile_success'] ?? [];
-        unset($_SESSION['profile_errors'], $_SESSION['profile_success']);
+        $errors = [];
+        $success = [];
         require_once __DIR__ . '/../Views/profile.php';
     }
 
-    public function handleProfileUpdate() {
-        if (!$this->isAuthenticated()) {
+    public function handleProfileUpdate()
+    {
+        if (!$this->authService->check()) {
             return ['redirect' => '/login'];
         }
-
-        $userId = $_SESSION['user_id'];
+        $userId = $this->authService->getCurrentUserId();
         $errors = [];
         $success = [];
+        $user = $this->userModel->getById($userId);
+        $newName = $this->authService->getCurrentUserName();
+        $newEmail = $this->authService->getCurrentUserEmail();
 
-        // Обновление имени
         if (isset($_POST['update_name']) && !empty($_POST['name'])) {
             $name = trim($_POST['name']);
             $result = $this->updateName($userId, $name);
-
             if ($result['success']) {
                 $success['name'] = $result['message'];
-                $_SESSION['user_name'] = $name;
+                $newName = $name;
             } else {
                 $errors['name'] = [$result['message']];
             }
         }
 
-        // Обновление email
         if (isset($_POST['update_email']) && !empty($_POST['email'])) {
             $email = trim($_POST['email']);
             $result = $this->updateEmail($userId, $email);
-
             if ($result['success']) {
                 $success['email'] = $result['message'];
-                $_SESSION['user_email'] = $email;
+                $newEmail = $email;
             } else {
                 $errors['email'] = [$result['message']];
             }
         }
 
-        // Обновление пароля
         if (isset($_POST['update_password'])) {
             $currentPassword = $_POST['current_password'] ?? '';
             $newPassword = $_POST['new_password'] ?? '';
             $confirmPassword = $_POST['confirm_password'] ?? '';
-
             $result = $this->updatePassword($userId, $currentPassword, $newPassword, $confirmPassword);
-
             if ($result['success']) {
                 $success['password'] = $result['message'];
             } else {
@@ -257,23 +261,24 @@ class UserController extends Model {
             }
         }
 
-        // Сохраняем сообщения в сессию
-        if (!empty($errors)) {
-            $_SESSION['profile_errors'] = $errors;
-        }
-        if (!empty($success)) {
-            $_SESSION['profile_success'] = $success;
+        if ($newName !== $this->getCurrentUserName() || $newEmail !== $this->getCurrentUserEmail()) {
+            $expire = time() + 60 * 60 * 24 * 30;
+            setcookie('user_id', (string) $userId, $expire, '/');
+            setcookie('user_name', $newName, $expire, '/');
+            setcookie('user_email', $newEmail, $expire, '/');
         }
 
-        return ['redirect' => '/profile'];
+        $user = $this->userModel->getById($userId);
+        require_once __DIR__ . '/../Views/profile.php';
+        return null;
     }
 
-    public function handleAvatarUpload() {
-        if (!$this->isAuthenticated()) {
+    public function handleAvatarUpload()
+    {
+        if (!$this->authService->check()) {
             return ['redirect' => '/login'];
         }
-
-        $userId = $_SESSION['user_id'];
+        $userId = $this->authService->getCurrentUserId();
         $errors = [];
         $success = [];
 
@@ -283,19 +288,14 @@ class UserController extends Model {
             $errors['avatar'] = ['Ошибка при загрузке файла'];
         } else {
             $file = $_FILES['avatar'];
-
-            // Проверка типа файла
             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             $fileType = mime_content_type($file['tmp_name']);
-
             if (!in_array($fileType, $allowedTypes)) {
                 $errors['avatar'] = ['Разрешены только изображения (JPEG, PNG, GIF, WebP)'];
-            } elseif ($file['size'] > 5 * 1024 * 1024) { // 5MB
+            } elseif ($file['size'] > 5 * 1024 * 1024) {
                 $errors['avatar'] = ['Размер файла не должен превышать 5MB'];
             } else {
-                // Загружаем аватар
                 $avatarResult = $this->uploadAvatar($userId, $file);
-
                 if ($avatarResult['success']) {
                     $success['avatar'] = $avatarResult['message'];
                 } else {
@@ -304,31 +304,25 @@ class UserController extends Model {
             }
         }
 
-        // Сохраняем сообщения
-        if (!empty($errors)) {
-            $_SESSION['profile_errors'] = $errors;
-        }
-        if (!empty($success)) {
-            $_SESSION['profile_success'] = $success;
-        }
-
-        return ['redirect' => '/profile'];
+        $user = $this->userModel->getById($userId);
+        require_once __DIR__ . '/../Views/profile.php';
+        return null;
     }
 
-    public function logout() {
-        session_destroy();
+    public function logout()
+    {
+        $this->authService->logout();
         return ['redirect' => '/login'];
+        exit();
     }
 
-
-    private function uploadAvatar($userId, $file) {
+    private function uploadAvatar($userId, $file)
+    {
         try {
-            // Создаем директорию если нужно
             $uploadDir = __DIR__ . '/../../public/uploads/avatars/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
-
             $user = $this->userModel->getById($userId);
             if ($user && $user->getAvatar() !== null && $user->getAvatar() !== '') {
                 $oldPath = $uploadDir . $user->getAvatar();
@@ -336,127 +330,108 @@ class UserController extends Model {
                     unlink($oldPath);
                 }
             }
-
-            // Генерируем имя файла
             $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
             $fileName = 'avatar_' . $userId . '_' . time() . '.' . $extension;
             $filePath = $uploadDir . $fileName;
-
-            // Загружаем файл
             if (!move_uploaded_file($file['tmp_name'], $filePath)) {
                 return ['success' => false, 'message' => 'Не удалось сохранить файл'];
             }
-
-            // Обновляем в БД
             $success = $this->userModel->updateAvatar($userId, $fileName);
-
             if ($success) {
                 return ['success' => true, 'message' => 'Аватар успешно обновлен'];
-            } else {
-                // Откатываем загрузку файла
-                if (file_exists($filePath)) {
-                    unlink($filePath);
-                }
-                return ['success' => false, 'message' => 'Ошибка при обновлении аватара в БД'];
             }
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+            return ['success' => false, 'message' => 'Ошибка при обновлении аватара в БД'];
         } catch (\Exception $e) {
             error_log("Avatar upload error: " . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при загрузке аватара'];
         }
     }
 
-    public function register($data) {
+    public function register($data)
+    {
         $errors = $this->validateRegistration($data);
-
         if (!empty($errors)) {
             return ['success' => false, 'errors' => $errors];
         }
-
         try {
             $name = trim($data['name']);
             $email = trim($data['email']);
             $password = $data['password'];
-
             $success = $this->userModel->create([
                 'name' => $name,
                 'email' => $email,
-                'password' => password_hash($password, PASSWORD_DEFAULT)
+                'password' => password_hash($password, PASSWORD_DEFAULT),
             ]);
-
             if ($success) {
                 return ['success' => true, 'message' => 'Пользователь успешно зарегистрирован'];
-            } else {
-                return ['success' => false, 'errors' => ['database' => 'Ошибка при создании пользователя']];
             }
+            return ['success' => false, 'errors' => ['database' => 'Ошибка при создании пользователя']];
         } catch (\PDOException $e) {
             error_log("Database error in register: " . $e->getMessage());
             return ['success' => false, 'errors' => ['database' => 'Ошибка сервера. Попробуйте позже.']];
         }
     }
 
-    public function updateName($userId, $name) {
+    public function updateName($userId, $name)
+    {
         $errors = $this->validateName($name);
         if (!empty($errors)) {
             return ['success' => false, 'message' => implode(', ', $errors)];
         }
-
         try {
             $success = $this->userModel->updateName($userId, $name);
-            if ($success) {
-                return ['success' => true, 'message' => 'Имя успешно обновлено'];
-            } else {
-                return ['success' => false, 'message' => 'Ошибка при обновлении имени'];
-            }
+            return $success
+                ? ['success' => true, 'message' => 'Имя успешно обновлено']
+                : ['success' => false, 'message' => 'Ошибка при обновлении имени'];
         } catch (\PDOException $e) {
             error_log("Database error in updateName: " . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при обновлении имени'];
         }
     }
 
-    public function updateEmail($userId, $email) {
+    public function updateEmail($userId, $email)
+    {
         $errors = $this->validateEmail($email, true, $userId);
         if (!empty($errors)) {
             return ['success' => false, 'message' => implode(', ', $errors)];
         }
-
         try {
             $success = $this->userModel->updateEmail($userId, $email);
-            if ($success) {
-                return ['success' => true, 'message' => 'Email успешно обновлен'];
-            } else {
-                return ['success' => false, 'message' => 'Ошибка при обновлении email'];
-            }
+            return $success
+                ? ['success' => true, 'message' => 'Email успешно обновлен']
+                : ['success' => false, 'message' => 'Ошибка при обновлении email'];
         } catch (\PDOException $e) {
             error_log("Database error in updateEmail: " . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при обновлении email'];
         }
     }
 
-    public function updatePassword($userId, $currentPassword, $newPassword, $confirmPassword) {
+    public function updatePassword($userId, $currentPassword, $newPassword, $confirmPassword)
+    {
         if (!$this->userModel->verifyPassword($userId, $currentPassword)) {
             return ['success' => false, 'message' => 'Неверный текущий пароль'];
         }
-
         $errors = $this->validatePassword($newPassword, $confirmPassword);
         if (!empty($errors)) {
             return ['success' => false, 'message' => implode(', ', $errors)];
         }
-
         try {
             $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
             $success = $this->userModel->updatePassword($userId, $hashedPassword);
-            if ($success) {
-                return ['success' => true, 'message' => 'Пароль успешно обновлен'];
-            } else {
-                return ['success' => false, 'message' => 'Ошибка при обновлении пароля'];
-            }
+            return $success
+                ? ['success' => true, 'message' => 'Пароль успешно обновлен']
+                : ['success' => false, 'message' => 'Ошибка при обновлении пароля'];
         } catch (\PDOException $e) {
             error_log("Database error in updatePassword: " . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при обновлении пароля'];
         }
     }
 
-    public function getUserById($userId) {
+    public function getUserById($userId)
+    {
         return $this->userModel->getById($userId);
     }
 }

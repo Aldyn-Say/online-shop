@@ -8,6 +8,9 @@ class Cart extends Model
 {
     private $userId;
 
+    public function getTableName(): string {
+        return "cart";
+    }
     public function loadByUserId(int $userId): void
     {
         $this->userId = $userId;

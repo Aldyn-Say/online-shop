@@ -18,6 +18,10 @@ class Order extends Model
 
     private array $products = [];
 
+    public function getTableName(): string {
+        return 'orders';
+    }
+
     public function fillFromArray(array $row): void
     {
         $this->id = isset($row['id']) ? (int) $row['id'] : null;
@@ -120,7 +124,7 @@ class Order extends Model
         try {
             $stmt = $this->pdo->prepare("
                 SELECT id, user_id, name, address, phone, comment, total, status, created_at
-                FROM orders
+                FROM {$this->getTableName()}
                 WHERE user_id = :user_id
                 ORDER BY created_at DESC
             ");

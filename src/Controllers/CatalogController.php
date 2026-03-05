@@ -2,33 +2,34 @@
 namespace Controllers;
 
 use Models\Cart;
-use Models\Model;
 use Models\Product;
-use PDO;
 
-class CatalogController extends Model
+
+class CatalogController extends BaseController
 {
     private Cart $cartModel;
     private Product $productModel;
 
-    public function __construct(PDO $pdo = null)
+    public function __construct()
     {
-        parent::__construct($pdo);
-        $this->cartModel = new Cart($this->pdo);
-        $this->productModel = new Product($this->pdo);
+        parent::__construct();
+        $this->cartModel = new Cart();
+        $this->productModel = new Product();
     }
 
     public function showCatalog()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
         $products = $this->productModel->getAll();
-        $userName = $_SESSION['user_name'] ?? '';
+        $loggedIn = $this->authService->check();
+        $userName = '';
         $cartCount = 0;
-        if (!empty($_SESSION['user_id'])) {
-            $this->cartModel->loadByUserId((int) $_SESSION['user_id']);
-            $cartCount = $this->cartModel->getItemsCount();
+        if ($loggedIn) {
+            $userName = $this->authService->getCurrentUserName();
+            $userId = $this->authService->getCurrentUserId();
+            if ($userId > 0) {
+                $this->cartModel->loadByUserId($userId);
+                $cartCount = $this->cartModel->getItemsCount();
+            }
         }
         require_once __DIR__ . '/../Views/catalog.php';
     }

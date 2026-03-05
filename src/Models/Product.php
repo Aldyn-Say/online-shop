@@ -12,6 +12,11 @@ class Product extends Model
     private $imageUrl;
     private $price;
 
+    public function getTableName(): string
+    {
+       return "products";
+    }
+
     private function fillFromArray(array $row): void
     {
         $this->id = isset($row['id']) ? (int) $row['id'] : null;
@@ -25,7 +30,7 @@ class Product extends Model
     public function getAll(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT * FROM products");
+            $stmt = $this->pdo->query("SELECT * FROM {$this->getTableName()}");
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $result = [];
             foreach ($rows as $row) {
@@ -43,7 +48,7 @@ class Product extends Model
     public function getById(int $id): ?self
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * FROM products WHERE id = :id");
+            $stmt = $this->pdo->prepare("SELECT * FROM {$this->getTableName()} WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) {

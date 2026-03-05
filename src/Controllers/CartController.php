@@ -2,29 +2,31 @@
 namespace Controllers;
 
 use Models\Cart;
-use Models\Model;
+use Service\AuthService;
 
-class CartController extends Model
+class CartController extends BaseController
 {
     protected $model;
 
     public function __construct()
     {
         parent::__construct();
-        $this->model = new Cart($this->pdo);
+        $this->model = new Cart();
+        $this->authService = new AuthService();
     }
 
     public function showCart()
     {
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+        if (!$this->authService->check()) {
             return ['redirect' => '/login'];
         }
 
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        $userId = $this->authService->getCurrentUserId();
         if ($userId === 0) {
             return ['redirect' => '/login'];
         }
 
+        $this->authService->startSession();
         $this->model->loadByUserId($userId);
         $cartItems = $this->model->getItems();
         $cartTotal = $this->model->getTotal();
@@ -38,14 +40,15 @@ class CartController extends Model
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/catalog'];
         }
+        $this->authService->startSession();
 
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) { //проверка авторизации
+        if (!$this->authService->check()) {
             $_SESSION['cart_message'] = ['type' => 'error', 'text' => 'Необходимо войти в систему для добавления товаров в корзину'];
             return ['redirect' => '/login'];
         }
 
-        $userId = $_SESSION['user_id'] ?? null; //инициализвация
-        if (!$userId) {
+        $userId = $this->authService->getCurrentUserId();
+        if ($userId === 0) {
             $_SESSION['cart_message'] = ['type' => 'error', 'text' => 'Ошибка авторизации'];
             return ['redirect' => '/login'];
         }
@@ -103,15 +106,11 @@ class CartController extends Model
             return ['redirect' => '/cart'];
         }
 
-        if (!isset($_SESSION)) {
-            session_start();
-        }
-
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) { //проеряем авторизацию
+        if (!$this->authService->check()) {
             return ['redirect' => '/login'];
         }
 
-        $userId = $_SESSION['user_id'];
+        $userId = $this->authService->getCurrentUserId();
         $errors = [];
         $success = [];
 
@@ -127,6 +126,7 @@ class CartController extends Model
             $result = $this->model->updateQuantity((int) $productId, $quantity);
         }
 
+        $this->authService->startSession();
         if (!empty($success)) {
             $_SESSION['cart_message'] = [
                 'type' => 'success',
@@ -146,15 +146,11 @@ class CartController extends Model
             return ['redirect' => '/cart'];
         }
 
-        if (!isset($_SESSION)) {
-            session_start();
-        }
-
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) { // проверка авторизации
+        if (!$this->authService->check()) {
             return ['redirect' => '/login'];
         }
 
-        $userId = $_SESSION['user_id'];
+        $userId = $this->authService->getCurrentUserId();
         $errors = [];
         $success = [];
 
@@ -173,6 +169,7 @@ class CartController extends Model
             }
         }
 
+        $this->authService->startSession();
         if (!empty($success)) {
             $_SESSION['cart_message'] = [
                 'type' => 'success',

@@ -9,9 +9,13 @@ class App
     {
         $requestUri = $_SERVER['REQUEST_URI'];
         $requestMethod = $_SERVER['REQUEST_METHOD'];
+        $path = parse_url($requestUri, PHP_URL_PATH);
+        if ($path === false) {
+            $path = $requestUri;
+        }
 
-        if (array_key_exists($requestUri, $this->routes)) {
-            $routeMethods = $this->routes[$requestUri];
+        if (array_key_exists($path, $this->routes)) {
+            $routeMethods = $this->routes[$path];
             if (array_key_exists($requestMethod, $routeMethods)) {
                 $handler = $routeMethods[$requestMethod];
                 $class = $handler['class'];

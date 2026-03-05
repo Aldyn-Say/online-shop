@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -126,6 +125,22 @@
             background: linear-gradient(145deg, #2C1E14, #4A3322);
         }
 
+        .product .buy-btn {
+            min-height: 48px;
+            box-sizing: border-box;
+        }
+
+        .product a.buy-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .product form + a.buy-btn,
+        .product a.buy-btn + a.buy-btn {
+            margin-top: 8px;
+        }
+
         .navbar {
             background: white;
             padding: 15px 20px;
@@ -217,7 +232,7 @@
 <div class="navbar">
     <h2>Онлайн магазин</h2>
     <div class="navbar-links">
-        <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
+        <?php if (!empty($loggedIn)): ?>
             <span style="color: #666; font-size: 14px;">Привет, <?php echo htmlspecialchars($userName); ?>!</span>
             <a href="/catalog">Каталог</a>
             <a href="/profile">Профиль</a>
@@ -227,7 +242,7 @@
                     <span class="cart-badge"><?php echo $cartCount; ?></span>
                 <?php endif; ?>
             </a>
-            <a href="/order">Мои заказы</a>
+            <a href="/orders">Мои заказы</a>
             <a href="/logout">Выйти</a>
         <?php else: ?>
             <a href="/login">Войти</a>
@@ -253,14 +268,17 @@
             <div class="product-title"><?php echo htmlspecialchars($product->getName() ?? ''); ?></div>
             <div class="product-price"><?php echo htmlspecialchars($product->getPrice() ?? ''); ?> ₽</div>
             <div class="product-description"><?php echo htmlspecialchars($product->getDescription() ?? ''); ?></div>
-            <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
+            <?php if (!empty($loggedIn)): ?>
                 <form action="/add-to-cart" method="POST" style="margin: 0;">
                     <input type="hidden" name="product_id" value="<?php echo $product->getId(); ?>">
                     <input type="hidden" name="quantity" value="1">
                     <button type="submit" class="buy-btn">В корзину</button>
                 </form>
+                <a href="/reviews?id=<?php echo (int)$product->getId(); ?>" class="buy-btn" style="text-decoration: none;">Отзывы</a>
+
             <?php else: ?>
-                <a href="/login" class="buy-btn" style="display: block; text-align: center; text-decoration: none; line-height: 38px;">В корзину</a>
+                <a href="/login" class="buy-btn" style="text-decoration: none;">В корзину</a>
+                <a href="/reviews?id=<?php echo (int)$product->getId(); ?>" class="buy-btn" style="text-decoration: none;">Отзывы</a>
             <?php endif; ?>
         </div>
     <?php endforeach; ?>

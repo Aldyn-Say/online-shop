@@ -2,11 +2,11 @@
 namespace Controllers;
 
 use Models\Cart;
-use Models\Model;
 use Models\Order;
 use Models\User;
+use Service\AuthService;
 
-class OrderController extends Model
+class OrderController extends BaseController
 {
     protected $orderModel;
     protected $cartModel;
@@ -15,23 +15,22 @@ class OrderController extends Model
     public function __construct()
     {
         parent::__construct();
-        $this->orderModel = new Order($this->pdo);
-        $this->cartModel = new Cart($this->pdo);
-        $this->userModel = new User($this->pdo);
+        $this->orderModel = new Order();
+        $this->cartModel = new Cart();
+        $this->userModel = new User();
     }
 
-    /** Страница оформления заказа (форма). */
     public function showCheckout()
     {
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+        if (!$this->authService->check()) {
+            return ['redirect' => '/login'];
+        }
+        $userId = $this->authService->getCurrentUserId();
+        if ($userId === 0) {
             return ['redirect' => '/login'];
         }
 
-        $userId = $_SESSION['user_id'] ?? null;
-        if (empty($userId)) {
-            return ['redirect' => '/login'];
-        }
-
+        $this->authService->startSession();
         $this->cartModel->loadByUserId((int) $userId);
         $cartItems = $this->cartModel->getItems();
         $cartTotal = $this->cartModel->getTotal();
@@ -53,21 +52,20 @@ class OrderController extends Model
         require_once __DIR__ . '/../Views/checkout.php';
     }
 
-    /** Обработка отправки формы оформления заказа. */
     public function handleCheckout()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/checkout'];
         }
 
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+        if (!$this->authService->check()) {
             return ['redirect' => '/login'];
         }
-
-        $userId = $_SESSION['user_id'] ?? null;
-        if (empty($userId)) {
+        $userId = $this->authService->getCurrentUserId();
+        if ($userId === 0) {
             return ['redirect' => '/login'];
         }
+        $this->authService->startSession();
 
         $name = trim($_POST['name'] ?? '');
         $address = trim($_POST['address'] ?? '');
@@ -104,17 +102,16 @@ class OrderController extends Model
         return ['redirect' => '/checkout'];
     }
 
-    /** Список заказов пользователя. */
     public function showOrders()
     {
-        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+        if (!$this->authService->check()) {
             return ['redirect' => '/login'];
         }
-
-        $userId = $_SESSION['user_id'] ?? null;
-        if (empty($userId)) {
+        $userId = $this->authService->getCurrentUserId();
+        if ($userId === 0) {
             return ['redirect' => '/login'];
         }
+        $this->authService->startSession();
 
         $orders = $this->orderModel->getOrdersByUserId($userId);
         $orderSuccess = $_SESSION['order_success'] ?? null;

@@ -13,6 +13,11 @@ class User extends Model
     private $avatar;
 
 
+    public function getTableName(): string
+    {
+        return 'users';
+    }
+
     private function fillFromArray(array $row): void
     {
         $this->id = isset($row['id']) ? (int) $row['id'] : null;
@@ -25,10 +30,10 @@ class User extends Model
     public function emailExists(string $email, ?int $excludeUserId = null): bool {
         try {
             if ($excludeUserId !== null) {
-                $stmt = $this->pdo->prepare("SELECT 1 FROM users WHERE email = :email AND id != :id LIMIT 1");
+                $stmt = $this->pdo->prepare("SELECT 1 FROM {$this->getTableName()} WHERE email = :email AND id != :id LIMIT 1");
                 $stmt->execute([':email' => $email, ':id' => $excludeUserId]);
             } else {
-                $stmt = $this->pdo->prepare("SELECT 1 FROM users WHERE email = :email LIMIT 1");
+                $stmt = $this->pdo->prepare("SELECT 1 FROM {$this->getTableName()} WHERE email = :email LIMIT 1");
                 $stmt->execute([':email' => $email]);
             }
             return $stmt->fetch() !== false;
@@ -41,7 +46,7 @@ class User extends Model
     public function getByEmail(string $email): ?self
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = :email");
+            $stmt = $this->pdo->prepare("SELECT * FROM {$this->getTableName()} WHERE email = :email");
             $stmt->execute([':email' => $email]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) {
@@ -59,7 +64,7 @@ class User extends Model
     public function getById($userId): ?self
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = :id");
+            $stmt = $this->pdo->prepare("SELECT * FROM {$this->getTableName()} WHERE id = :id");
             $stmt->execute([':id' => $userId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) {
@@ -81,7 +86,7 @@ class User extends Model
                 return false;
             }
 
-            $stmt = $this->pdo->prepare("INSERT INTO users (name, email, password) VALUES (:name, :email, :password)");
+            $stmt = $this->pdo->prepare("INSERT INTO {$this->getTableName()} (name, email, password) VALUES (:name, :email, :password)");
             
             if (!$stmt) {
                 error_log("User::create: Failed to prepare statement. Error: " . implode(', ', $this->pdo->errorInfo()));
@@ -130,7 +135,7 @@ class User extends Model
     // Метод для обновления имени
     public function updateName($userId, $name) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET name = :name WHERE id = :id");
+            $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET name = :name WHERE id = :id");
             return $stmt->execute([':name' => $name, ':id' => $userId]);
         } catch (PDOException $e) {
             error_log("Database error in User::updateName: " . $e->getMessage());
@@ -141,7 +146,7 @@ class User extends Model
     // Метод для обновления email
     public function updateEmail($userId, $email) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET email = :email WHERE id = :id");
+            $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET email = :email WHERE id = :id");
             return $stmt->execute([':email' => $email, ':id' => $userId]);
         } catch (PDOException $e) {
             error_log("Database error in User::updateEmail: " . $e->getMessage());
@@ -152,7 +157,7 @@ class User extends Model
     // Метод для обновления пароля
     public function updatePassword($userId, $hashedPassword) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET password = :password WHERE id = :id");
+            $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET password = :password WHERE id = :id");
             return $stmt->execute([':password' => $hashedPassword, ':id' => $userId]);
         } catch (PDOException $e) {
             error_log("Database error in User::updatePassword: " . $e->getMessage());
@@ -163,7 +168,7 @@ class User extends Model
     // Метод для обновления аватара
     public function updateAvatar($userId, $avatarFileName) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE users SET avatar = :avatar WHERE id = :id");
+            $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET avatar = :avatar WHERE id = :id");
             return $stmt->execute([':avatar' => $avatarFileName, ':id' => $userId]);
         } catch (PDOException $e) {
             error_log("Database error in User::updateAvatar: " . $e->getMessage());

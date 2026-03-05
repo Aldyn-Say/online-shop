@@ -3,6 +3,7 @@
 use Controllers\CartController;
 use Controllers\CatalogController;
 use Controllers\OrderController;
+use Controllers\ReviewsController;
 use Controllers\UserController;
 use Core\App;
 
@@ -19,6 +20,9 @@ $app->post('/registration', UserController::class , 'handleRegistration');
 $app->get('/login', UserController::class , 'showLoginForm');
 $app->post('/login',  UserController::class , 'handleLogin');
 $app->get('/catalog',  CatalogController::class , 'showCatalog');
+$app->get('/reviews', ReviewsController::class, 'showProduct');
+$app->post('/reviews', ReviewsController::class, 'showProduct');
+$app->post('/add-review', ReviewsController::class, 'handleAddReview');
 $app->get('/profile',  UserController::class , 'showProfile');
 $app->post('/profile', UserController::class , 'handleProfileUpdate');
 $app->post('/upload_avatar',  UserController::class , 'handleAvatarUpload');

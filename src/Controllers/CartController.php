@@ -138,7 +138,7 @@ class CartController extends BaseController
                 'text' => implode(', ', $errors)
             ];
         }
-        return ['redirect' => '/cart']; // редирект обратно на корзину
+        return ['redirect' => '/cart'];
     }
 
     public function handleRemoveFromCart() {
@@ -182,6 +182,6 @@ class CartController extends BaseController
             ];
         }
 
-        return ['redirect' => '/cart']; // Редирект обратно на корзину
+        return ['redirect' => '/cart'];
     }
 }

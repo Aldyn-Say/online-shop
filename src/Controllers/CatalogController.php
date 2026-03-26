@@ -21,16 +21,19 @@ class CatalogController extends BaseController
     {
         $products = $this->productModel->getAll();
         $loggedIn = $this->authService->check();
+
         $userName = '';
         $cartCount = 0;
+
         if ($loggedIn) {
-            $userName = $this->authService->getCurrentUserName();
             $userId = $this->authService->getCurrentUserId();
             if ($userId > 0) {
                 $this->cartModel->loadByUserId($userId);
                 $cartCount = $this->cartModel->getItemsCount();
+                $userName = $this->authService->getCurrentUserName();
             }
         }
+
         require_once __DIR__ . '/../Views/catalog.php';
     }
 }

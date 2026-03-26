@@ -23,7 +23,6 @@ class App
                 $controller = new $class();
                 $result = $controller->$method();
 
-                // Если контроллер вернул массив с ключом 'redirect' — делаем редирект
                 if (is_array($result) && isset($result['redirect'])) {
                     header('Location: ' . $result['redirect']);
                     exit;

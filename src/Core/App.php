@@ -1,11 +1,18 @@
 <?php
+
 namespace Core;
+
+use ReflectionException;
+use ReflectionMethod;
+use ReflectionNamedType;
+use Request\AddProductRequest;
+use Request\RegistrateRequest;
 
 class App
 {
     private array $routes = [];
 
-    public function run()
+    public function run(): void
     {
         $requestUri = $_SERVER['REQUEST_URI'];
         $requestMethod = $_SERVER['REQUEST_METHOD'];
@@ -21,7 +28,9 @@ class App
                 $class = $handler['class'];
                 $method = $handler['method'];
                 $controller = new $class();
-                $result = $controller->$method();
+
+                $args = $this->resolveControllerArguments($class, $method);
+                $result = $controller->$method(...$args);
 
                 if (is_array($result) && isset($result['redirect'])) {
                     header('Location: ' . $result['redirect']);
@@ -32,22 +41,55 @@ class App
             }
         } else {
             http_response_code(404);
-            require_once  './../Views/404.php';
+            require_once './../Views/404.php';
         }
     }
 
-    public function post(string $route, string $className, string $method)
+    /**
+     * Подставляет DTO запроса по типу первого параметра экшена (только POST-данные из форм).
+     *
+     * @param class-string $controllerClass
+     * @return list<object>
+     */
+    private function resolveControllerArguments(string $controllerClass, string $actionMethod): array
+    {
+        try {
+            $refMethod = new ReflectionMethod($controllerClass, $actionMethod);
+        } catch (ReflectionException) {
+            return [];
+        }
+
+        $args = [];
+        foreach ($refMethod->getParameters() as $param) {
+            $type = $param->getType();
+            if (!$type instanceof ReflectionNamedType || $type->isBuiltin()) {
+                continue;
+            }
+
+            $className = $type->getName();
+            if ($className === AddProductRequest::class) {
+                $args[] = new AddProductRequest($_POST);
+            } elseif ($className === RegistrateRequest::class) {
+                $args[] = new RegistrateRequest($_POST);
+            }
+        }
+
+        return $args;
+    }
+
+    public function post(string $route, string $className, string $method): void
     {
         $this->routes[$route]['POST'] = [
             'class' => $className,
-            'method' => $method
+            'method' => $method,
         ];
     }
-    public function get(string $route, string $className, string $method)
+
+    public function get(string $route, string $className, string $method): void
     {
         $this->routes[$route]['GET'] = [
             'class' => $className,
-            'method' => $method
+            'method' => $method,
         ];
     }
 }

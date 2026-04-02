@@ -38,7 +38,7 @@ class User extends Model
             }
             return $stmt->fetch() !== false;
         } catch (PDOException $e) {
-            error_log("Database error in User::emailExists: " . $e->getMessage());
+            $this->logError('Database error in User::emailExists: ' . $e->getMessage());
             return false;
         }
     }
@@ -56,7 +56,7 @@ class User extends Model
             $obj->fillFromArray($row);
             return $obj;
         } catch (PDOException $e) {
-            error_log("Database error in User::getByEmail: " . $e->getMessage());
+            $this->logError('Database error in User::getByEmail: ' . $e->getMessage());
             return null;
         }
     }
@@ -74,22 +74,17 @@ class User extends Model
             $obj->fillFromArray($row);
             return $obj;
         } catch (PDOException $e) {
-            error_log("Database error in User::getById: " . $e->getMessage());
+            $this->logError('Database error in User::getById: ' . $e->getMessage());
             return null;
         }
     }
 
     public function create($data) {
         try {
-            if (!$this->pdo) { // Проверяем подключение к БД
-                error_log("User::create: PDO connection is null");
-                return false;
-            }
-
             $stmt = $this->pdo->prepare("INSERT INTO {$this->getTableName()} (name, email, password) VALUES (:name, :email, :password)");
             
             if (!$stmt) {
-                error_log("User::create: Failed to prepare statement. Error: " . implode(', ', $this->pdo->errorInfo()));
+                $this->logError('User::create: Failed to prepare statement. Error: ' . implode(', ', $this->pdo->errorInfo()));
                 return false;
             }
 
@@ -101,7 +96,7 @@ class User extends Model
             
             if (!$result) {
                 $errorInfo = $stmt->errorInfo();
-                error_log("User::create: execute() failed. Error: " . implode(' | ', $errorInfo));
+                $this->logError('User::create: execute() failed. Error: ' . implode(' | ', $errorInfo));
                 return false;
             }
             
@@ -112,22 +107,22 @@ class User extends Model
             } else {
                 // Если execute вернул true, но rowCount = 0, значит запись не была вставлена
                 $errorInfo = $stmt->errorInfo();
-                error_log("User::create: execute returned true but rowCount = 0. Email: " . $data['email'] . " | ErrorInfo: " . implode(' | ', $errorInfo));
+                $this->logError('User::create: execute returned true but rowCount = 0. Email: ' . $data['email'] . ' | ErrorInfo: ' . implode(' | ', $errorInfo));
                 return false;
             }
         } catch (PDOException $e) {
             $errorCode = $e->getCode();
             $errorMessage = $e->getMessage();
             if ($errorCode == '23505' || strpos($errorMessage, 'duplicate key') !== false || strpos($errorMessage, 'unique constraint') !== false) {
-                error_log("User::create: Duplicate email detected: " . $data['email']);
+                $this->logError('User::create: Duplicate email detected: ' . $data['email']);
                 // Возвращаем специальный код для дубликата
                 return ['success' => false, 'duplicate_email' => true];
             }
             
-            error_log("Database error in User::create: " . $errorMessage . " | Code: " . $errorCode);
+            $this->logError('Database error in User::create: ' . $errorMessage . ' | Code: ' . $errorCode);
             return false;
-        } catch (Exception $e) {
-            error_log("General error in User::create: " . $e->getMessage() . " | Trace: " . $e->getTraceAsString());
+        } catch (\Exception $e) {
+            $this->logError('General error in User::create: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
             return false;
         }
     }
@@ -138,7 +133,7 @@ class User extends Model
             $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET name = :name WHERE id = :id");
             return $stmt->execute([':name' => $name, ':id' => $userId]);
         } catch (PDOException $e) {
-            error_log("Database error in User::updateName: " . $e->getMessage());
+            $this->logError('Database error in User::updateName: ' . $e->getMessage());
             return false;
         }
     }
@@ -149,7 +144,7 @@ class User extends Model
             $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET email = :email WHERE id = :id");
             return $stmt->execute([':email' => $email, ':id' => $userId]);
         } catch (PDOException $e) {
-            error_log("Database error in User::updateEmail: " . $e->getMessage());
+            $this->logError('Database error in User::updateEmail: ' . $e->getMessage());
             return false;
         }
     }
@@ -160,7 +155,7 @@ class User extends Model
             $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET password = :password WHERE id = :id");
             return $stmt->execute([':password' => $hashedPassword, ':id' => $userId]);
         } catch (PDOException $e) {
-            error_log("Database error in User::updatePassword: " . $e->getMessage());
+            $this->logError('Database error in User::updatePassword: ' . $e->getMessage());
             return false;
         }
     }
@@ -171,7 +166,7 @@ class User extends Model
             $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET avatar = :avatar WHERE id = :id");
             return $stmt->execute([':avatar' => $avatarFileName, ':id' => $userId]);
         } catch (PDOException $e) {
-            error_log("Database error in User::updateAvatar: " . $e->getMessage());
+            $this->logError('Database error in User::updateAvatar: ' . $e->getMessage());
             return false;
         }
     }
@@ -182,7 +177,7 @@ class User extends Model
             $user = $this->getById($userId);
             return $user && password_verify($currentPassword, $user->getPassword());
         } catch (PDOException $e) {
-            error_log("Database error in User::verifyPassword: " . $e->getMessage());
+            $this->logError('Database error in User::verifyPassword: ' . $e->getMessage());
             return false;
         }
     }

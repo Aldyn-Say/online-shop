@@ -34,7 +34,7 @@ class Cart extends Model
             $stmt->execute([':user_id' => $this->userId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Cart::getItems: " . $e->getMessage());
+            $this->logError('Cart::getItems: ' . $e->getMessage());
             return [];
         }
     }
@@ -55,7 +55,7 @@ class Cart extends Model
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return (float) ($row['total'] ?? 0);
         } catch (PDOException $e) {
-            error_log("Cart::getTotal: " . $e->getMessage());
+            $this->logError('Cart::getTotal: ' . $e->getMessage());
             return 0.0;
         }
     }
@@ -71,7 +71,7 @@ class Cart extends Model
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return (int) ($row['total_count'] ?? 0);
         } catch (PDOException $e) {
-            error_log("Cart::getItemsCount: " . $e->getMessage());
+            $this->logError('Cart::getItemsCount: ' . $e->getMessage());
             return 0;
         }
     }
@@ -98,7 +98,7 @@ class Cart extends Model
                 ? ['success' => true, 'action' => 'added', 'message' => 'Товар добавлен в корзину']
                 : ['success' => false, 'message' => 'Не удалось добавить товар в корзину'];
         } catch (PDOException $e) {
-            error_log("Cart::addToCart: " . $e->getMessage());
+            $this->logError('Cart::addToCart: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при добавлении товара в корзину'];
         }
     }
@@ -118,7 +118,7 @@ class Cart extends Model
                 ? ['success' => true, 'message' => 'Количество товара обновлено']
                 : ['success' => false, 'message' => 'Товар не найден в корзине'];
         } catch (PDOException $e) {
-            error_log("Cart::updateQuantity: " . $e->getMessage());
+            $this->logError('Cart::updateQuantity: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при обновлении количества'];
         }
     }
@@ -135,7 +135,7 @@ class Cart extends Model
                 ? ['success' => true, 'message' => 'Товар удален из корзины']
                 : ['success' => false, 'message' => 'Товар не найден в корзине'];
         } catch (PDOException $e) {
-            error_log("Cart::remove: " . $e->getMessage());
+            $this->logError('Cart::remove: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при удалении товара'];
         }
     }
@@ -150,7 +150,7 @@ class Cart extends Model
             $stmt->execute([':user_id' => $this->userId]);
             return ['success' => true, 'message' => 'Корзина очищена'];
         } catch (PDOException $e) {
-            error_log("Cart::clear: " . $e->getMessage());
+            $this->logError('Cart::clear: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Ошибка при очистке корзины'];
         }
     }

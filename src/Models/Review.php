@@ -5,7 +5,7 @@ namespace Models;
 use PDO;
 use PDOException;
 
-class Reviews extends Model
+class Review extends Model
 {
     private $id;
     private $productId;

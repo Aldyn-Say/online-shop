@@ -2,16 +2,24 @@
 
 namespace Controllers;
 
-use Service\AuthService;
+use Service\Auth\AuthInterface;
+use Service\Auth\AuthSessionService;
 
 abstract class BaseController
 {
-    protected AuthService $authService;
+    protected AuthSessionService $authService;
 
 
     public function __construct()
     {
-        $this->authService = new AuthService();
+        $this->authService = new AuthSessionService();
+    }
+
+    protected function logError(string $message): void
+    {
+        $logger = new \Service\Logger\LoggerService();
+        $logger->error($message);
+        $logger->errorToDb($message, 'error');
     }
 
 }

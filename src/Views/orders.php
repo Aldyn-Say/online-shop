@@ -160,9 +160,9 @@
                         <?php $orderProducts = $order->getProducts(); if (empty($orderProducts)): ?>
                             <div class="product-item">Нет товаров</div>
                         <?php else: ?>
-                            <?php foreach ($orderProducts as $product): ?>
+                            <?php foreach ($orderProducts as $line): ?>
                                 <div class="product-item">
-                                    • <?php echo htmlspecialchars($product['name']); ?> — <?php echo number_format((float) $product['price'], 2, '.', ' '); ?> ₽ × <?php echo (int) $product['amount']; ?>
+                                    • <?php echo htmlspecialchars((string) ($line->getProductName() ?? '')); ?> — <?php echo number_format((float) ($line->getProductPrice() ?? 0), 2, '.', ' '); ?> ₽ × <?php echo $line->getAmount(); ?>
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>

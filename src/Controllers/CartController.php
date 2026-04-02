@@ -1,18 +1,17 @@
 <?php
 namespace Controllers;
 
-use Models\Cart;
-use Service\AuthService;
+use Service\CartService;
+use Request\AddProductRequest;
 
 class CartController extends BaseController
 {
-    protected $model;
+    protected CartService $cartService;
 
     public function __construct()
     {
         parent::__construct();
-        $this->model = new Cart();
-        $this->authService = new AuthService();
+        $this->cartService = new CartService();
     }
 
     public function showCart()
@@ -27,16 +26,15 @@ class CartController extends BaseController
         }
 
         $this->authService->startSession();
-        $this->model->loadByUserId($userId);
-        $cartItems = $this->model->getItems();
-        $cartTotal = $this->model->getTotal();
+        $cartItems = $this->cartService->getUserProducts();
+        $cartTotal = $this->cartService->sumUserProductLines($cartItems);
         $cartMessage = $_SESSION['cart_message'] ?? null;
         unset($_SESSION['cart_message']);
 
         require_once __DIR__ . '/../Views/cart.php';
     }
 
-    public function handleAddToCart() {
+    public function handleAddToCart(AddProductRequest $request) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/catalog'];
         }
@@ -53,33 +51,19 @@ class CartController extends BaseController
             return ['redirect' => '/login'];
         }
 
-        $productId = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
-        $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
-
-        $errors = [];
-
-        // Валидация
-        if ($productId <= 0) {
-            $errors[] = 'Не указан корректный товар';
-        }
-
-        if ($quantity <= 0) {
-            $errors[] = 'Количество должно быть больше нуля';
-        }
+        $productId = $request->getProductId();
+        $quantity = $request->getQuantity();
+        $errors = $request->validate();
 
         if (empty($errors)) {
-            $this->model->loadByUserId((int) $userId);
-            $result = $this->model->addToCart($productId, $quantity);
+            $result = $this->cartService->addToCart((int) $userId, $productId, $quantity);
 
-            if ($result['success']) {
+            if ($result['success'] ?? false) {
                 $_SESSION['cart_message'] = [
                     'type' => 'success',
-                    'text' => $result['message']
+                    'text' => $result['message'] ?? 'Товар добавлен в корзину'
                 ];
             } else {
-                // Логирование ошибки
-                error_log("Error adding to cart: " . $result['message'] . " | User ID: " . $userId . " | Product ID: " . $productId);
-
                 $_SESSION['cart_message'] = [
                     'type' => 'error',
                     'text' => $result['message'] ?? 'Ошибка добавления товара в корзину'
@@ -111,31 +95,29 @@ class CartController extends BaseController
         }
 
         $userId = $this->authService->getCurrentUserId();
-        $errors = [];
-        $success = [];
-
         $productId = $_POST['product_id'] ?? null;
         $quantity = isset($_POST['quantity']) ? (int) $_POST['quantity'] : 1;
 
+        $errors = [];
         if (empty($productId)) {
             $errors[] = 'Не указан товар';
-        } elseif ($quantity < 1) {
-            $errors[] = 'Количество должно быть больше нуля';
         } else {
-            $this->model->loadByUserId((int) $userId);
-            $result = $this->model->updateQuantity((int) $productId, $quantity);
+            $result = $this->cartService->updateCartItem((int) $userId, (int) $productId, $quantity);
+            if (!($result['success'] ?? false)) {
+                $errors[] = $result['message'] ?? 'Ошибка обновления количества';
+            }
         }
 
         $this->authService->startSession();
-        if (!empty($success)) {
-            $_SESSION['cart_message'] = [
-                'type' => 'success',
-                'text' => implode(', ', $success)
-            ];
-        } elseif (!empty($errors)) {
+        if (!empty($errors)) {
             $_SESSION['cart_message'] = [
                 'type' => 'error',
                 'text' => implode(', ', $errors)
+            ];
+        } else {
+            $_SESSION['cart_message'] = [
+                'type' => 'success',
+                'text' => $result['message'] ?? 'Количество товара обновлено'
             ];
         }
         return ['redirect' => '/cart'];
@@ -151,34 +133,28 @@ class CartController extends BaseController
         }
 
         $userId = $this->authService->getCurrentUserId();
-        $errors = [];
-        $success = [];
-
         $productId = $_POST['product_id'] ?? null;
+        $errors = [];
 
         if (empty($productId)) {
             $errors[] = 'Не указан товар';
         } else {
-            $this->model->loadByUserId((int) $userId);
-            $result = $this->model->remove((int) $productId);
-
-            if (isset($result['success']) && $result['success']) {
-                $success[] = $result['message'] ?? 'Товар успешно удален из корзины';
-            } else {
+            $result = $this->cartService->removeFromCart((int) $userId, (int) $productId);
+            if (!($result['success'] ?? false)) {
                 $errors[] = $result['message'] ?? 'Ошибка удаления товара из корзины';
             }
         }
 
         $this->authService->startSession();
-        if (!empty($success)) {
-            $_SESSION['cart_message'] = [
-                'type' => 'success',
-                'text' => implode(', ', $success)
-            ];
-        } elseif (!empty($errors)) {
+        if (!empty($errors)) {
             $_SESSION['cart_message'] = [
                 'type' => 'error',
                 'text' => implode(', ', $errors)
+            ];
+        } else {
+            $_SESSION['cart_message'] = [
+                'type' => 'success',
+                'text' => $result['message'] ?? 'Товар успешно удален из корзины'
             ];
         }
 

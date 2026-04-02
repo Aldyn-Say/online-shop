@@ -1,0 +1,2 @@
+[2026-04-01 12:16:24] Проверка логгеров: LOGGER_TEST_a167f8b7
+[2026-04-01 12:16:24] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution

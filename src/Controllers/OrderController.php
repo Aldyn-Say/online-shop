@@ -1,23 +1,32 @@
 <?php
 namespace Controllers;
 
-use Models\Cart;
-use Models\Order;
+use DTO\OrderCreateDTO;
 use Models\User;
-use Service\AuthService;
+use Models\UserProduct;
+use Service\CartService;
+use Service\OrderService;
 
 class OrderController extends BaseController
 {
-    protected $orderModel;
-    protected $cartModel;
-    protected $userModel;
+    protected OrderService $orderService;
+    protected CartService $cartService;
 
     public function __construct()
     {
         parent::__construct();
-        $this->orderModel = new Order();
-        $this->cartModel = new Cart();
-        $this->userModel = new User();
+        $this->orderService = new OrderService();
+        $this->cartService = new CartService();
+    }
+
+    /**
+     * Позиции корзины пользователя (UserProduct с Product и totalSum).
+     *
+     * @return UserProduct[]
+     */
+    protected function getOrderProducts(User $user): array
+    {
+        return $this->cartService->getOrderProducts($user);
     }
 
     public function showCheckout()
@@ -31,16 +40,16 @@ class OrderController extends BaseController
         }
 
         $this->authService->startSession();
-        $this->cartModel->loadByUserId((int) $userId);
-        $cartItems = $this->cartModel->getItems();
-        $cartTotal = $this->cartModel->getTotal();
+        $checkoutData = $this->orderService->getCheckoutData((int) $userId);
+        $cartItems = $checkoutData['cartItems'];
+        $cartTotal = $checkoutData['cartTotal'];
 
         if (empty($cartItems)) {
             $_SESSION['cart_message'] = ['type' => 'error', 'text' => 'Корзина пуста. Добавьте товары перед оформлением заказа.'];
             return ['redirect' => '/cart'];
         }
 
-        $user = $this->userModel->getById($userId);
+        $user = $checkoutData['user'];
         $checkoutMessage = $_SESSION['checkout_message'] ?? null;
         $checkoutErrors = $_SESSION['checkout_errors'] ?? [];
         $checkoutForm = $_SESSION['checkout_form'] ?? [];
@@ -67,31 +76,28 @@ class OrderController extends BaseController
         }
         $this->authService->startSession();
 
-        $name = trim($_POST['name'] ?? '');
-        $address = trim($_POST['address'] ?? '');
-        $phone = trim($_POST['phone'] ?? '');
-        $comment = trim($_POST['comment'] ?? '');
+        $orderCreateDTO = new OrderCreateDTO(
+            (int) $userId,
+            trim($_POST['name'] ?? ''),
+            trim($_POST['address'] ?? ''),
+            trim($_POST['phone'] ?? ''),
+            trim($_POST['comment'] ?? '')
+        );
 
-        $errors = [];
-        if (empty($name)) {
-            $errors['name'] = 'Укажите имя';
-        }
-        if (empty($address)) {
-            $errors['address'] = 'Укажите адрес доставки';
-        }
-        if (empty($phone)) {
-            $errors['phone'] = 'Укажите номер телефона';
-        } elseif (!preg_match('/^[\d\s\+\-\(\)]{10,20}$/', $phone)) {
-            $errors['phone'] = 'Некорректный формат телефона';
-        }
+        $errors = $this->orderService->validateCheckoutForm($orderCreateDTO);
 
         if (!empty($errors)) {
             $_SESSION['checkout_errors'] = $errors;
-            $_SESSION['checkout_form'] = ['name' => $name, 'address' => $address, 'phone' => $phone, 'comment' => $comment];
+            $_SESSION['checkout_form'] = [
+                'name' => $orderCreateDTO->getName(),
+                'address' => $orderCreateDTO->getAddress(),
+                'phone' => $orderCreateDTO->getPhone(),
+                'comment' => $orderCreateDTO->getComment()
+            ];
             return ['redirect' => '/checkout'];
         }
 
-        $result = $this->orderModel->createOrder($userId, $name, $address, $phone, $comment);
+        $result = $this->orderService->createOrder($orderCreateDTO);
 
         if ($result['success']) {
             $_SESSION['order_success'] = $result['message'];
@@ -113,7 +119,7 @@ class OrderController extends BaseController
         }
         $this->authService->startSession();
 
-        $orders = $this->orderModel->getOrdersByUserId($userId);
+        $orders = $this->orderService->getOrdersByUserId((int) $userId);
         $orderSuccess = $_SESSION['order_success'] ?? null;
         unset($_SESSION['order_success']);
 

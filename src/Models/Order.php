@@ -114,7 +114,7 @@ class Order extends Model
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            error_log("Order::createOrder: " . $e->getMessage());
+            $this->logError('Order::createOrder: ' . $e->getMessage());
             return ['success' => false, 'order_id' => null, 'message' => 'Ошибка при оформлении заказа'];
         }
     }
@@ -139,7 +139,7 @@ class Order extends Model
             }
             return $result;
         } catch (PDOException $e) {
-            error_log("Order::getOrdersByUserId: " . $e->getMessage());
+            $this->logError('Order::getOrdersByUserId: ' . $e->getMessage());
             return [];
         }
     }
@@ -148,15 +148,22 @@ class Order extends Model
     {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT op.product_id, op.amount, p.name, p.price
+                SELECT op.order_id, op.product_id, op.amount, p.name, p.price
                 FROM order_products op
                 JOIN products p ON op.product_id = p.id
                 WHERE op.order_id = :order_id
             ");
             $stmt->execute([':order_id' => $orderId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = [];
+            foreach ($rows as $row) {
+                $line = new OrderProduct();
+                $line->fillFromArray($row);
+                $result[] = $line;
+            }
+            return $result;
         } catch (PDOException $e) {
-            error_log("Order::getOrderProducts: " . $e->getMessage());
+            $this->logError('Order::getOrderProducts: ' . $e->getMessage());
             return [];
         }
     }

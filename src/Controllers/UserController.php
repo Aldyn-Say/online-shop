@@ -3,7 +3,8 @@
 namespace Controllers;
 
 use Models\User;
-use Service\AuthService;
+use Request\RegistrateRequest;
+
 class UserController extends BaseController
 {
     protected $userModel;
@@ -68,15 +69,6 @@ class UserController extends BaseController
         return [];
     }
 
-    private function validateRegistration(array $data): array
-    {
-        return array_filter([
-            'name' => $this->validateName($data['name'] ?? ''),
-            'email' => $this->validateEmail($data['email'] ?? '', true),
-            'password' => $this->validatePassword($data['password'] ?? '', $data['password_confirm'] ?? null)
-        ]);
-    }
-
     // ========== РЕГИСТРАЦИЯ ==========
 
     public function showRegistrationForm()
@@ -88,24 +80,20 @@ class UserController extends BaseController
         ]);
     }
 
-    public function handleRegistration()
+    public function handleRegistration(RegistrateRequest $request)
     {
-        $data = [
-            'name' => trim($_POST['name'] ?? ''),
-            'email' => trim($_POST['email'] ?? ''),
-            'password' => $_POST['password'] ?? '',
-            'password_confirm' => $_POST['password_confirm'] ?? ''
-        ];
-
-        $errors = $this->validateRegistration($data);
+        $errors = $request->validate($this->userModel);
 
         if (!empty($errors)) {
-            return $this->redirectWithData('registration_form', [
+            $this->redirectWithData('registration_form', [
                 'errors' => $errors,
                 'old_registration_data' => $_POST,
-                'registration_success' => null
+                'registration_success' => null,
             ]);
+            return;
         }
+
+        $data = $request->toArray();
 
         try {
             $result = $this->userModel->create([
@@ -121,7 +109,7 @@ class UserController extends BaseController
             $errors = ['email' => ['Пользователь с таким email уже существует']];
 
         } catch (\Exception $e) {
-            error_log("Registration error: " . $e->getMessage());
+            $this->logError('Registration error: ' . $e->getMessage());
             $errors = ['general' => ['Ошибка сервера. Попробуйте позже.']];
         }
 
@@ -165,19 +153,11 @@ class UserController extends BaseController
 
         try {
             if ($this->authService->auth($email, $password)) {
-                $user = $this->userModel->getByEmail($email);
-                if ($user) {
-                    $this->authService->setLoginCookies(
-                        $user->getId(),
-                        $user->getName(),
-                        $user->getEmail()
-                    );
-                }
                 return ['redirect' => '/catalog'];
             }
             $errors['general'] = ['Неверный email или пароль'];
         } catch (\Exception $e) {
-            error_log("Login error: " . $e->getMessage());
+            $this->logError('Login error: ' . $e->getMessage());
             $errors['general'] = ['Ошибка сервера. Попробуйте позже.'];
         }
 
@@ -295,17 +275,31 @@ class UserController extends BaseController
             } elseif ($file['size'] > 5 * 1024 * 1024) {
                 $errors['avatar'] = ['Максимум 5MB'];
             } else {
-                $uploadDir = __DIR__ . '/../../public/uploads/avatars/';
-                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+                // Документ nginx: src/public — сюда же пишем файлы (не корневой /public проекта).
+                $uploadDir = dirname(__DIR__) . '/public/uploads/avatars/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
 
                 $user = $this->userModel->getById($userId);
                 if ($user && $user->getAvatar()) {
                     $oldPath = $uploadDir . $user->getAvatar();
-                    if (file_exists($oldPath)) unlink($oldPath);
+                    if (file_exists($oldPath)) {
+                        unlink($oldPath);
+                    }
                 }
 
-                $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-                $fileName = "avatar_{$userId}_" . time() . ".$extension";
+                $extension = strtolower((string) pathinfo($file['name'], PATHINFO_EXTENSION));
+                if ($extension === '') {
+                    $extension = match ($fileType) {
+                        'image/jpeg' => 'jpg',
+                        'image/png' => 'png',
+                        'image/gif' => 'gif',
+                        'image/webp' => 'webp',
+                        default => 'img',
+                    };
+                }
+                $fileName = "avatar_{$userId}_" . time() . '.' . $extension;
 
                 if (move_uploaded_file($file['tmp_name'], $uploadDir . $fileName)) {
                     if ($this->userModel->updateAvatar($userId, $fileName)) {

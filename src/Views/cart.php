@@ -329,36 +329,45 @@
     <?php else: ?>
         <div class="cart-items">
             <?php foreach ($cartItems as $item): ?>
+                <?php
+                $product = $item->getProduct();
+                if ($product === null) {
+                    continue;
+                }
+                $pid = $item->getProductId();
+                $lineTotal = $item->getTotalSum() ?? 0.0;
+                $img = $product->getImageUrl() ?: 'images/placeholder.jpg';
+                ?>
                 <div class="cart-item">
-                    <img src="<?php echo htmlspecialchars($item['image_url'] ?? 'images/placeholder.jpg'); ?>"
-                         alt="<?php echo htmlspecialchars($item['name']); ?>"
+                    <img src="<?php echo htmlspecialchars($img); ?>"
+                         alt="<?php echo htmlspecialchars((string) $product->getName()); ?>"
                          class="item-image">
 
                     <div class="item-info">
-                        <div class="item-name"><?php echo htmlspecialchars($item['name']); ?></div>
-                        <div class="item-price"><?php echo number_format($item['price'], 2, '.', ' '); ?> ₽</div>
+                        <div class="item-name"><?php echo htmlspecialchars((string) $product->getName()); ?></div>
+                        <div class="item-price"><?php echo number_format((float) $product->getPrice(), 2, '.', ' '); ?> ₽</div>
                     </div>
 
                     <div class="item-quantity">
                         <form action="/update-cart" method="POST" style="display: flex; align-items: center; gap: 10px;">
-                            <input type="hidden" name="product_id" value="<?php echo $item['product_id']; ?>">
-                            <button type="button" class="quantity-btn" onclick="decreaseQuantity(<?php echo $item['product_id']; ?>)">-</button>
+                            <input type="hidden" name="product_id" value="<?php echo (int) $pid; ?>">
+                            <button type="button" class="quantity-btn" onclick="decreaseQuantity(<?php echo (int) $pid; ?>)">-</button>
                             <input type="number"
                                    name="quantity"
-                                   value="<?php echo $item['quantity']; ?>"
+                                   value="<?php echo (int) $item->getAmount(); ?>"
                                    min="1"
                                    class="quantity-input"
                                    onchange="this.form.submit()">
-                            <button type="button" class="quantity-btn" onclick="increaseQuantity(<?php echo $item['product_id']; ?>)">+</button>
+                            <button type="button" class="quantity-btn" onclick="increaseQuantity(<?php echo (int) $pid; ?>)">+</button>
                         </form>
                     </div>
 
                     <div class="item-total">
-                        <?php echo number_format($item['item_total'], 2, '.', ' '); ?> ₽
+                        <?php echo number_format($lineTotal, 2, '.', ' '); ?> ₽
                     </div>
 
                     <form action="/remove-from-cart" method="POST" style="display: inline;">
-                        <input type="hidden" name="product_id" value="<?php echo $item['product_id']; ?>">
+                        <input type="hidden" name="product_id" value="<?php echo (int) $pid; ?>">
                         <button type="submit" class="item-remove" onclick="return confirm('Удалить товар из корзины?')">Удалить</button>
                     </form>
                 </div>

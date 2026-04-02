@@ -40,7 +40,7 @@ class Product extends Model
             }
             return $result;
         } catch (PDOException $e) {
-            error_log("Product::getAll: " . $e->getMessage());
+            $this->logError('Product::getAll: ' . $e->getMessage());
             return [];
         }
     }
@@ -58,7 +58,7 @@ class Product extends Model
             $product->fillFromArray($row);
             return $product;
         } catch (PDOException $e) {
-            error_log("Product::getById: " . $e->getMessage());
+            $this->logError('Product::getById: ' . $e->getMessage());
             return null;
         }
     }
@@ -68,4 +68,10 @@ class Product extends Model
     public function getDescription() { return $this->description; }
     public function getImageUrl() { return $this->imageUrl; }
     public function getPrice()  { return $this->price; }
+
+    public function setId(?int $id): void { $this->id = $id; }
+    public function setName(?string $name): void { $this->name = $name; }
+    public function setDescription(?string $description): void { $this->description = $description; }
+    public function setImageUrl(?string $imageUrl): void { $this->imageUrl = $imageUrl; }
+    public function setPrice(?float $price): void { $this->price = $price; }
 }

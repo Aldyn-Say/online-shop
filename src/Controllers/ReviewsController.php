@@ -3,18 +3,18 @@
 namespace Controllers;
 
 use Models\Product;
-use Models\Reviews;
+use Models\Review;
 
 class ReviewsController extends BaseController
 {
     private Product $productModel;
-    private Reviews $reviewsModel;
+    private Review $reviewModel;
 
     public function __construct()
     {
         parent::__construct();
         $this->productModel = new Product();
-        $this->reviewsModel = new Reviews();
+        $this->reviewModel = new Review();
     }
 
     public function showProduct()
@@ -25,13 +25,13 @@ class ReviewsController extends BaseController
             return ['redirect' => '/catalog'];
         }
 
-        $reviews = $this->reviewsModel->getByProductId($productId);
+        $reviews = $this->reviewModel->getByProductId($productId);
 
         $this->authService->startSession();
 
         $loggedIn = $this->authService->check();
         $userId = $loggedIn ? $this->authService->getCurrentUserId() : 0;
-        $canReview = $loggedIn && $userId > 0 && !$this->reviewsModel->userAlreadyReviewed($productId, $userId);
+        $canReview = $loggedIn && $userId > 0 && !$this->reviewModel->userAlreadyReviewed($productId, $userId);
         $message = $_SESSION['product_message'] ?? null;
 
         unset($_SESSION['product_message']);
@@ -67,12 +67,12 @@ class ReviewsController extends BaseController
             return ['redirect' => "/reviews?id=$productId"];
         }
 
-        if ($this->reviewsModel->userAlreadyReviewed($productId, $userId)) {
+        if ($this->reviewModel->userAlreadyReviewed($productId, $userId)) {
             $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Вы уже оставляли отзыв.'];
             return ['redirect' => "/reviews?id=$productId"];
         }
 
-        $success = $this->reviewsModel->create($productId, $userId, $rating, $comment);
+        $success = $this->reviewModel->create($productId, $userId, $rating, $comment);
 
         $_SESSION['product_message'] = $success
             ? ['type' => 'success', 'text' => 'Отзыв добавлен!']

@@ -19,11 +19,6 @@ class OrderController extends BaseController
         $this->cartService = new CartService();
     }
 
-    /**
-     * Позиции корзины пользователя (UserProduct с Product и totalSum).
-     *
-     * @return UserProduct[]
-     */
     protected function getOrderProducts(User $user): array
     {
         return $this->cartService->getOrderProducts($user);

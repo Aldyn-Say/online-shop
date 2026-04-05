@@ -15,7 +15,7 @@ class Review extends Model
     private $createdAt;
     private $userName;
 
-    public function getTableName(): string
+    public static function getTableName(): string
     {
         return 'reviews';
     }
@@ -34,12 +34,12 @@ class Review extends Model
     public function getByProductId(int $productId): array
     {
         $sql = "SELECT pr.*, u.name AS user_name 
-            FROM {$this->getTableName()} pr 
+            FROM " . static::getTableName() . " pr 
             JOIN users u ON pr.user_id = u.id 
             WHERE pr.product_id = :product_id 
             ORDER BY pr.created_at DESC";
 
-        $stmt = $this->pdo->prepare($sql);
+        $stmt = self::getPDO()->prepare($sql);
         $stmt->execute(['product_id' => $productId]);
 
         $result = [];
@@ -54,8 +54,8 @@ class Review extends Model
 
     public function create(int $productId, int $userId, int $rating, string $comment): bool
     {
-        $stmt = $this->pdo->prepare(
-            "INSERT INTO {$this->getTableName()} (product_id, user_id, rating, comment) 
+        $stmt = self::getPDO()->prepare(
+            "INSERT INTO " . static::getTableName() . " (product_id, user_id, rating, comment) 
          VALUES (:product_id, :user_id, :rating, :comment)"
         );
 
@@ -69,8 +69,8 @@ class Review extends Model
 
     public function userAlreadyReviewed(int $productId, int $userId): bool
     {
-        $stmt = $this->pdo->prepare(
-            "SELECT 1 FROM {$this->getTableName()} WHERE product_id = :product_id AND user_id = :user_id LIMIT 1"
+        $stmt = self::getPDO()->prepare(
+            "SELECT 1 FROM " . static::getTableName() . " WHERE product_id = :product_id AND user_id = :user_id LIMIT 1"
         );
         $stmt->execute(['product_id' => $productId, 'user_id' => $userId]);
 

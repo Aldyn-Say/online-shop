@@ -338,7 +338,7 @@
                 $lineTotal = $item->getTotalSum() ?? 0.0;
                 $img = $product->getImageUrl() ?: 'images/placeholder.jpg';
                 ?>
-                <div class="cart-item">
+                <div class="cart-item" data-product-id="<?php echo (int) $pid; ?>" data-line-total="<?php echo (float) $lineTotal; ?>">
                     <img src="<?php echo htmlspecialchars($img); ?>"
                          alt="<?php echo htmlspecialchars((string) $product->getName()); ?>"
                          class="item-image">
@@ -362,11 +362,11 @@
                         </form>
                     </div>
 
-                    <div class="item-total">
+                    <div class="item-total" data-role="line-total">
                         <?php echo number_format($lineTotal, 2, '.', ' '); ?> ₽
                     </div>
 
-                    <form action="/remove-from-cart" method="POST" style="display: inline;">
+                    <form action="/remove-from-cart" method="POST" class="js-remove-from-cart" style="display: inline;">
                         <input type="hidden" name="product_id" value="<?php echo (int) $pid; ?>">
                         <button type="submit" class="item-remove" onclick="return confirm('Удалить товар из корзины?')">Удалить</button>
                     </form>
@@ -377,7 +377,7 @@
         <div class="cart-summary">
             <div class="cart-total">
                 <span class="cart-total-label">Итого:</span>
-                <?php echo number_format($cartTotal, 2, '.', ' '); ?> ₽
+                <span id="cartTotalValue"><?php echo number_format($cartTotal, 2, '.', ' '); ?> ₽</span>
             </div>
             <div class="cart-actions">
                 <a href="/catalog" class="btn btn-continue">Продолжить покупки</a>
@@ -388,6 +388,25 @@
 </div>
 
 <script>
+    async function postFormAjax(form) {
+        const body = new URLSearchParams(new FormData(form));
+        const res = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body
+        });
+        const data = await res.json();
+        return { ok: res.ok, data };
+    }
+
+    function formatRub(amount) {
+        const n = Number(amount || 0);
+        return n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₽';
+    }
+
     function changeQuantity(productId, delta) {
         var form = document.querySelector('form[action="/update-cart"] input[name="product_id"][value="' + productId + '"]');
         if (!form) return;
@@ -402,6 +421,38 @@
     }
     function increaseQuantity(productId) { changeQuantity(productId, 1); }
     function decreaseQuantity(productId) { changeQuantity(productId, -1); }
+
+    document.querySelectorAll('form.js-remove-from-cart').forEach((form) => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!confirm('Удалить товар из корзины?')) return;
+            const btn = form.querySelector('button[type="submit"]');
+            if (btn) btn.disabled = true;
+            try {
+                const { ok, data } = await postFormAjax(form);
+                if (!ok || !data.success) {
+                    if (data.redirect) window.location.href = data.redirect;
+                    else alert(data.message || 'Ошибка');
+                    return;
+                }
+
+                const item = form.closest('.cart-item');
+                if (item) item.remove();
+
+                const totalEl = document.getElementById('cartTotalValue');
+                if (totalEl) totalEl.textContent = formatRub(data.cartTotal);
+
+                // Если корзина стала пустой — проще перезагрузить, чтобы показать empty-state корректно
+                if (Number(data.cartCount || 0) === 0) {
+                    window.location.reload();
+                }
+            } catch (err) {
+                alert('Ошибка сети');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        });
+    });
 </script>
 </body>
 </html>

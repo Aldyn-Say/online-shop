@@ -6,7 +6,7 @@ use PDOException;
 
 class ApplicationLog extends Model
 {
-    protected function getTableName(): string
+    protected static function getTableName(): string
     {
         return 'application_logs';
     }
@@ -14,7 +14,7 @@ class ApplicationLog extends Model
     public function write(string $level, string $message): bool
     {
         try {
-            $stmt = $this->pdo->prepare(
+            $stmt = self::getPDO()->prepare(
                 'INSERT INTO application_logs (level, message, created_at) VALUES (:level, :message, CURRENT_TIMESTAMP)'
             );
 

@@ -9,28 +9,29 @@ use Service\Logger\LoggerService;
 
 abstract class Model
 {
-    protected PDO $pdo;
+    protected static ?PDO $pdo = null;
 
-    public function __construct(?PDO $pdo = null)
+    public static function getPDO(): PDO
     {
-        if ($pdo !== null) {
-            $this->pdo = $pdo;
-            return;
+        if (self::$pdo instanceof PDO) {
+            return self::$pdo;
         }
+
         try {
-            $this->pdo = new PDO("pgsql:host=db;port=5432;dbname=postgres", "aldun", "0000");
+            self::$pdo = new PDO("pgsql:host=db;port=5432;dbname=postgres", "aldun", "0000");
+            return self::$pdo;
         } catch (PDOException $e) {
             (new LoggerService())->error('DB connection failed: ' . $e->getMessage());
             throw new RuntimeException('Не удалось подключиться к базе данных', 0, $e);
         }
     }
 
-    protected function logError(string $message): void
+    protected static function logError(string $message): void
     {
         $logger = new LoggerService();
         $logger->error($message);
         $logger->errorToDb($message, 'error');
     }
 
-    abstract protected function getTableName(): string;
+    abstract protected static function getTableName(): string;
 }

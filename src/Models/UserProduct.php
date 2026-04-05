@@ -14,7 +14,7 @@ class UserProduct extends Model
     private ?Product $product = null;
     private ?float $totalSum = null;
 
-    protected function getTableName(): string
+    protected static function getTableName(): string
     {
         return 'user_products';
     }
@@ -95,13 +95,13 @@ class UserProduct extends Model
                 ORDER BY up.id DESC
             ";
 
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = self::getPDO()->prepare($sql);
             $stmt->execute([':user_id' => $userId]);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             return $this->hydrateUserProductsWithProducts($rows);
         } catch (PDOException $e) {
-            $this->logError('UserProduct::getUserProductsWithProductData: ' . $e->getMessage());
+            self::logError('UserProduct::getUserProductsWithProductData: ' . $e->getMessage());
             return [];
         }
     }
@@ -111,14 +111,14 @@ class UserProduct extends Model
         $result = [];
 
         foreach ($rows as $row) {
-            $product = new Product($this->pdo);
+            $product = new Product();
             $product->setId(isset($row['product_id']) ? (int) $row['product_id'] : null);
             $product->setName($row['product_name'] ?? null);
             $product->setPrice(isset($row['product_price']) ? (float) $row['product_price'] : null);
             $product->setDescription($row['product_description'] ?? null);
             $product->setImageUrl($row['product_image_url'] ?? null);
 
-            $line = new self($this->pdo);
+            $line = new self();
             $line->fillFromArray($row);
             $line->setProduct($product);
 
@@ -139,13 +139,13 @@ class UserProduct extends Model
                 INNER JOIN products p ON up.product_id = p.id
                 WHERE up.user_id = :user_id
             ";
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = self::getPDO()->prepare($sql);
             $stmt->execute([':user_id' => $userId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return (float) ($row['total'] ?? 0);
         } catch (PDOException $e) {
-            $this->logError('UserProduct::getCartTotal: ' . $e->getMessage());
+            self::logError('UserProduct::getCartTotal: ' . $e->getMessage());
             return 0.0;
         }
     }
@@ -158,13 +158,13 @@ class UserProduct extends Model
                 FROM user_products up
                 WHERE up.user_id = :user_id
             ";
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = self::getPDO()->prepare($sql);
             $stmt->execute([':user_id' => $userId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return (int) ($row['count'] ?? 0);
         } catch (PDOException $e) {
-            $this->logError('UserProduct::getCartItemsCount: ' . $e->getMessage());
+            self::logError('UserProduct::getCartItemsCount: ' . $e->getMessage());
             return 0;
         }
     }
@@ -172,9 +172,9 @@ class UserProduct extends Model
     public function getAllUserProductsByUserId(int $userId): array
     {
         try {
-            $stmt = $this->pdo->prepare("
+            $stmt = self::getPDO()->prepare("
                 SELECT id, user_id, product_id, quantity
-                FROM {$this->getTableName()}
+                FROM " . static::getTableName() . "
                 WHERE user_id = :user_id
                 ORDER BY id DESC
             ");
@@ -182,14 +182,14 @@ class UserProduct extends Model
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $result = [];
             foreach ($rows as $row) {
-                $line = new self($this->pdo);
+                $line = new self();
                 $line->fillFromArray($row);
                 $result[] = $line;
             }
 
             return $result;
         } catch (PDOException $e) {
-            $this->logError('UserProduct::getAllUserProductsByUserId: ' . $e->getMessage());
+            self::logError('UserProduct::getAllUserProductsByUserId: ' . $e->getMessage());
 
             return [];
         }

@@ -1,17 +1,48 @@
 <?php
 namespace Controllers;
 
+use Models\Cart;
+use Models\Model;
 use Service\CartService;
 use Request\AddProductRequest;
 
 class CartController extends BaseController
 {
     protected CartService $cartService;
+    private Cart $cartModel;
 
     public function __construct()
     {
         parent::__construct();
         $this->cartService = new CartService();
+        $this->cartModel = new Cart();
+    }
+
+    private function isAjaxRequest(): bool
+    {
+        return ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
+    }
+
+    private function json(array $data, int $statusCode = 200): void
+    {
+        http_response_code($statusCode);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    private function getUserProductQuantity(int $userId, int $productId): int
+    {
+        try {
+            $stmt = Model::getPDO()->prepare(
+                "SELECT quantity FROM user_products WHERE user_id = :user_id AND product_id = :product_id"
+            );
+            $stmt->execute([':user_id' => $userId, ':product_id' => $productId]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return (int) ($row['quantity'] ?? 0);
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     public function showCart()
@@ -41,12 +72,26 @@ class CartController extends BaseController
         $this->authService->startSession();
 
         if (!$this->authService->check()) {
+            if ($this->isAjaxRequest()) {
+                $this->json([
+                    'success' => false,
+                    'message' => 'Необходимо войти в систему для добавления товаров в корзину',
+                    'redirect' => '/login',
+                ], 401);
+            }
             $_SESSION['cart_message'] = ['type' => 'error', 'text' => 'Необходимо войти в систему для добавления товаров в корзину'];
             return ['redirect' => '/login'];
         }
 
         $userId = $this->authService->getCurrentUserId();
         if ($userId === 0) {
+            if ($this->isAjaxRequest()) {
+                $this->json([
+                    'success' => false,
+                    'message' => 'Ошибка авторизации',
+                    'redirect' => '/login',
+                ], 401);
+            }
             $_SESSION['cart_message'] = ['type' => 'error', 'text' => 'Ошибка авторизации'];
             return ['redirect' => '/login'];
         }
@@ -59,17 +104,40 @@ class CartController extends BaseController
             $result = $this->cartService->addToCart((int) $userId, $productId, $quantity);
 
             if ($result['success'] ?? false) {
+                if ($this->isAjaxRequest()) {
+                    $this->cartModel->loadByUserId((int) $userId);
+                    $this->json([
+                        'success' => true,
+                        'message' => $result['message'] ?? 'Товар добавлен в корзину',
+                        'cartCount' => $this->cartModel->getItemsCount(),
+                        'cartTotal' => $this->cartModel->getTotal(),
+                        'quantity' => $this->getUserProductQuantity((int) $userId, (int) $productId),
+                    ]);
+                }
                 $_SESSION['cart_message'] = [
                     'type' => 'success',
                     'text' => $result['message'] ?? 'Товар добавлен в корзину'
                 ];
             } else {
+                if ($this->isAjaxRequest()) {
+                    $this->json([
+                        'success' => false,
+                        'message' => $result['message'] ?? 'Ошибка добавления товара в корзину',
+                    ], 400);
+                }
                 $_SESSION['cart_message'] = [
                     'type' => 'error',
                     'text' => $result['message'] ?? 'Ошибка добавления товара в корзину'
                 ];
             }
         } else {
+            if ($this->isAjaxRequest()) {
+                $this->json([
+                    'success' => false,
+                    'message' => implode(', ', $errors),
+                    'errors' => $errors,
+                ], 422);
+            }
             // Сохраняем ошибки валидации
             $_SESSION['cart_message'] = [
                 'type' => 'error',
@@ -91,6 +159,13 @@ class CartController extends BaseController
         }
 
         if (!$this->authService->check()) {
+            if ($this->isAjaxRequest()) {
+                $this->json([
+                    'success' => false,
+                    'message' => 'Необходимо войти в систему',
+                    'redirect' => '/login',
+                ], 401);
+            }
             return ['redirect' => '/login'];
         }
 
@@ -110,11 +185,29 @@ class CartController extends BaseController
 
         $this->authService->startSession();
         if (!empty($errors)) {
+            if ($this->isAjaxRequest()) {
+                $this->json([
+                    'success' => false,
+                    'message' => implode(', ', $errors),
+                ], 400);
+            }
             $_SESSION['cart_message'] = [
                 'type' => 'error',
                 'text' => implode(', ', $errors)
             ];
         } else {
+            if ($this->isAjaxRequest()) {
+                $this->cartModel->loadByUserId((int) $userId);
+                $pid = (int) $productId;
+                $this->json([
+                    'success' => true,
+                    'message' => $result['message'] ?? 'Количество товара обновлено',
+                    'cartCount' => $this->cartModel->getItemsCount(),
+                    'cartTotal' => $this->cartModel->getTotal(),
+                    'quantity' => $this->getUserProductQuantity((int) $userId, $pid),
+                    'productId' => $pid,
+                ]);
+            }
             $_SESSION['cart_message'] = [
                 'type' => 'success',
                 'text' => $result['message'] ?? 'Количество товара обновлено'
@@ -129,6 +222,13 @@ class CartController extends BaseController
         }
 
         if (!$this->authService->check()) {
+            if ($this->isAjaxRequest()) {
+                $this->json([
+                    'success' => false,
+                    'message' => 'Необходимо войти в систему',
+                    'redirect' => '/login',
+                ], 401);
+            }
             return ['redirect' => '/login'];
         }
 
@@ -147,11 +247,26 @@ class CartController extends BaseController
 
         $this->authService->startSession();
         if (!empty($errors)) {
+            if ($this->isAjaxRequest()) {
+                $this->json([
+                    'success' => false,
+                    'message' => implode(', ', $errors),
+                ], 400);
+            }
             $_SESSION['cart_message'] = [
                 'type' => 'error',
                 'text' => implode(', ', $errors)
             ];
         } else {
+            if ($this->isAjaxRequest()) {
+                $this->cartModel->loadByUserId((int) $userId);
+                $this->json([
+                    'success' => true,
+                    'message' => $result['message'] ?? 'Товар успешно удален из корзины',
+                    'cartCount' => $this->cartModel->getItemsCount(),
+                    'cartTotal' => $this->cartModel->getTotal(),
+                ]);
+            }
             $_SESSION['cart_message'] = [
                 'type' => 'success',
                 'text' => $result['message'] ?? 'Товар успешно удален из корзины'

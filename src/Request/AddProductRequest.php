@@ -18,9 +18,6 @@ class AddProductRequest
         return (int) ($this->data['quantity'] ?? 1);
     }
 
-    /**
-     * @return list<string>
-     */
     public function validate(): array
     {
         $errors = [];
@@ -30,9 +27,7 @@ class AddProductRequest
         return $errors;
     }
 
-    /**
-     * @return list<string>
-     */
+
     private function validateProductId(): array
     {
         if ($this->getProductId() <= 0) {
@@ -42,9 +37,6 @@ class AddProductRequest
         return [];
     }
 
-    /**
-     * @return list<string>
-     */
     private function validateQuantity(): array
     {
         if ($this->getQuantity() <= 0) {

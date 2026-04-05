@@ -11,7 +11,7 @@ class OrderProduct extends Model
     private ?string $productName = null;
     private ?float $productPrice = null;
 
-    public function getTableName(): string
+    public static function getTableName(): string
     {
         return 'order_products';
     }

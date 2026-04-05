@@ -18,7 +18,7 @@ class Order extends Model
 
     private array $products = [];
 
-    public function getTableName(): string {
+    public static function getTableName(): string {
         return 'orders';
     }
 
@@ -56,9 +56,9 @@ class Order extends Model
     public function createOrder(int $userId, string $name, string $address, string $phone, string $comment = ''): array
     {
         try {
-            $this->pdo->beginTransaction();
+            self::getPDO()->beginTransaction();
 
-            $stmt = $this->pdo->prepare("
+            $stmt = self::getPDO()->prepare("
                 SELECT up.product_id, up.quantity, p.price, p.name
                 FROM user_products up
                 JOIN products p ON up.product_id = p.id
@@ -68,7 +68,7 @@ class Order extends Model
             $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             if (empty($items)) {
-                $this->pdo->rollBack();
+                self::getPDO()->rollBack();
                 return ['success' => false, 'order_id' => null, 'message' => 'Корзина пуста'];
             }
 
@@ -77,7 +77,7 @@ class Order extends Model
                 $total += $row['price'] * $row['quantity'];
             }
 
-            $stmt = $this->pdo->prepare("
+            $stmt = self::getPDO()->prepare("
                 INSERT INTO orders (user_id, name, address, phone, comment, total, status)
                 VALUES (:user_id, :name, :address, :phone, :comment, :total, 'new')
                 RETURNING id
@@ -93,7 +93,7 @@ class Order extends Model
             $orderRow = $stmt->fetch(PDO::FETCH_ASSOC);
             $orderId = (int) $orderRow['id'];
 
-            $stmtItem = $this->pdo->prepare("
+            $stmtItem = self::getPDO()->prepare("
                 INSERT INTO order_products (order_id, product_id, amount)
                 VALUES (:order_id, :product_id, :amount)
             ");
@@ -105,16 +105,16 @@ class Order extends Model
                 ]);
             }
 
-            $stmt = $this->pdo->prepare("DELETE FROM user_products WHERE user_id = :user_id");
+            $stmt = self::getPDO()->prepare("DELETE FROM user_products WHERE user_id = :user_id");
             $stmt->execute([':user_id' => $userId]);
 
-            $this->pdo->commit();
+            self::getPDO()->commit();
             return ['success' => true, 'order_id' => $orderId, 'message' => 'Заказ успешно оформлен'];
         } catch (PDOException $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
+            if (self::getPDO()->inTransaction()) {
+                self::getPDO()->rollBack();
             }
-            $this->logError('Order::createOrder: ' . $e->getMessage());
+            self::logError('Order::createOrder: ' . $e->getMessage());
             return ['success' => false, 'order_id' => null, 'message' => 'Ошибка при оформлении заказа'];
         }
     }
@@ -122,33 +122,76 @@ class Order extends Model
     public function getOrdersByUserId(int $userId): array
     {
         try {
-            $stmt = $this->pdo->prepare("
+            $stmt = self::getPDO()->prepare("
                 SELECT id, user_id, name, address, phone, comment, total, status, created_at
-                FROM {$this->getTableName()}
+                FROM " . static::getTableName() . "
                 WHERE user_id = :user_id
                 ORDER BY created_at DESC
             ");
             $stmt->execute([':user_id' => $userId]);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $result = [];
-            foreach ($rows as $row) {
-                $order = new self($this->pdo);
-                $order->fillFromArray($row);
-                $order->setProducts($this->getOrderProducts((int) $row['id']));
-                $result[] = $order;
+            if ($rows === []) {
+                return [];
             }
-            return $result;
+
+            $ordersById = [];
+            foreach ($rows as $row) {
+                $order = new self();
+                $order->fillFromArray($row);
+                $ordersById[(int) $row['id']] = $order;
+            }
+
+            $linesByOrderId = $this->fetchOrderLinesWithProductsGrouped(array_keys($ordersById));
+            foreach ($ordersById as $orderId => $order) {
+                $order->setProducts($linesByOrderId[$orderId] ?? []);
+            }
+
+            return array_values($ordersById);
         } catch (PDOException $e) {
-            $this->logError('Order::getOrdersByUserId: ' . $e->getMessage());
+            self::logError('Order::getOrdersByUserId: ' . $e->getMessage());
             return [];
         }
+    }
+
+    private function fetchOrderLinesWithProductsGrouped(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($orderIds), '?'));
+        $stmt = self::getPDO()->prepare("
+            SELECT
+                op.order_id,
+                op.product_id,
+                op.amount,
+                p.name,
+                p.price,
+                (op.amount * p.price) AS line_total
+            FROM order_products op
+            JOIN products p ON op.product_id = p.id
+            WHERE op.order_id IN ($placeholders)
+            ORDER BY op.order_id, op.id
+        ");
+        $stmt->execute(array_values($orderIds));
+
+        $grouped = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $oid = (int) $row['order_id'];
+            $line = new OrderProduct();
+            $line->fillFromArray($row);
+            $grouped[$oid][] = $line;
+        }
+
+        return $grouped;
     }
 
     public function getOrderProducts(int $orderId): array
     {
         try {
-            $stmt = $this->pdo->prepare("
-                SELECT op.order_id, op.product_id, op.amount, p.name, p.price
+            $stmt = self::getPDO()->prepare("
+                SELECT op.order_id, op.product_id, op.amount, p.name, p.price,
+                       (op.amount * p.price) AS line_total
                 FROM order_products op
                 JOIN products p ON op.product_id = p.id
                 WHERE op.order_id = :order_id
@@ -163,7 +206,7 @@ class Order extends Model
             }
             return $result;
         } catch (PDOException $e) {
-            $this->logError('Order::getOrderProducts: ' . $e->getMessage());
+            self::logError('Order::getOrderProducts: ' . $e->getMessage());
             return [];
         }
     }

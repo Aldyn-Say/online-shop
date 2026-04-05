@@ -23,7 +23,7 @@ class LoggerService
         try {
             (new ApplicationLog())->write($level, $message);
         } catch (Throwable) {
-            // Не ломаем приложение из-за недоступной БД
+
         }
     }
 }

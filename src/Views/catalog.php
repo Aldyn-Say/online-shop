@@ -205,6 +205,34 @@
             font-weight: bold;
         }
 
+        .qty-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+        }
+        .qty-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            background: #fff;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .qty-value {
+            flex: 1;
+            text-align: center;
+            font-weight: 700;
+            font-size: 16px;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
         .message {
             padding: 12px 15px;
             border-radius: 5px;
@@ -238,9 +266,9 @@
             <a href="/profile">Профиль</a>
             <a href="/cart" class="cart-link" style="position: relative;">
                 Корзина
-                <?php if ($cartCount > 0): ?>
-                    <span class="cart-badge"><?php echo $cartCount; ?></span>
-                <?php endif; ?>
+                <span class="cart-badge" id="cartBadge" style="<?php echo ($cartCount ?? 0) > 0 ? '' : 'display:none;'; ?>">
+                    <?php echo (int) ($cartCount ?? 0); ?>
+                </span>
             </a>
             <a href="/orders">Мои заказы</a>
             <a href="/logout">Выйти</a>
@@ -269,7 +297,7 @@
             <div class="product-price"><?php echo htmlspecialchars($product->getPrice() ?? ''); ?> ₽</div>
             <div class="product-description"><?php echo htmlspecialchars($product->getDescription() ?? ''); ?></div>
             <?php if (!empty($loggedIn)): ?>
-                <form action="/add-to-cart" method="POST" style="margin: 0;">
+                <form action="/add-to-cart" method="POST" class="js-add-to-cart" style="margin: 0;">
                     <input type="hidden" name="product_id" value="<?php echo $product->getId(); ?>">
                     <input type="hidden" name="quantity" value="1">
                     <button type="submit" class="buy-btn">В корзину</button>
@@ -286,5 +314,139 @@
         <p>Товары не найдены</p>
     <?php endif; ?>
 </div>
+
+<script>
+    async function postFormAjax(form) {
+        const body = new URLSearchParams(new FormData(form));
+        const res = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body
+        });
+        const data = await res.json();
+        return { ok: res.ok, data };
+    }
+
+    function updateCartBadge(cartCount) {
+        const badge = document.getElementById('cartBadge');
+        if (!badge) return;
+        const n = Number(cartCount || 0);
+        badge.textContent = String(n);
+        badge.style.display = n > 0 ? '' : 'none';
+    }
+
+    function renderQtyControl(productId, qty) {
+        const q = Math.max(1, Number(qty || 1));
+        return `
+          <div class="qty-control" data-qty-control="${productId}">
+            <button type="button" class="qty-btn" data-action="dec" aria-label="Уменьшить">-</button>
+            <div class="qty-value" data-role="qty">${q}</div>
+            <button type="button" class="qty-btn" data-action="inc" aria-label="Увеличить">+</button>
+          </div>
+        `;
+    }
+
+    function renderAddForm(productId) {
+        return `
+          <form action="/add-to-cart" method="POST" class="js-add-to-cart" style="margin: 0;">
+            <input type="hidden" name="product_id" value="${productId}">
+            <input type="hidden" name="quantity" value="1">
+            <button type="submit" class="buy-btn">В корзину</button>
+          </form>
+        `;
+    }
+
+    async function updateCartQuantity(productId, qty) {
+        const res = await fetch('/update-cart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({ product_id: String(productId), quantity: String(qty) })
+        });
+        const data = await res.json();
+        return { ok: res.ok, data };
+    }
+
+    async function removeFromCartAjax(productId) {
+        const res = await fetch('/remove-from-cart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({ product_id: String(productId) })
+        });
+        const data = await res.json();
+        return { ok: res.ok, data };
+    }
+
+    document.addEventListener('submit', async (e) => {
+        const form = e.target.closest('form.js-add-to-cart');
+        if (!form) return;
+        e.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = true;
+        try {
+            const { ok, data } = await postFormAjax(form);
+            if (!ok || !data.success) {
+                if (data.redirect) window.location.href = data.redirect;
+                else alert(data.message || 'Ошибка');
+                return;
+            }
+            updateCartBadge(data.cartCount);
+            const productId = form.querySelector('input[name="product_id"]')?.value;
+            if (productId) {
+                form.outerHTML = renderQtyControl(productId, data.quantity || 1);
+            }
+        } catch (err) {
+            alert('Ошибка сети');
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    });
+
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button.qty-btn');
+        if (!btn) return;
+        const control = btn.closest('[data-qty-control]');
+        if (!control) return;
+        const productId = control.getAttribute('data-qty-control');
+        const qtyEl = control.querySelector('[data-role="qty"]');
+        const current = Number(qtyEl?.textContent || 1);
+        const next = btn.dataset.action === 'inc' ? current + 1 : current - 1;
+
+        btn.disabled = true;
+        try {
+            if (next <= 0) {
+                const { ok, data } = await removeFromCartAjax(productId);
+                if (!ok || !data.success) {
+                    if (data.redirect) window.location.href = data.redirect;
+                    else alert(data.message || 'Ошибка');
+                    return;
+                }
+                updateCartBadge(data.cartCount);
+                control.outerHTML = renderAddForm(productId);
+                return;
+            }
+            const { ok, data } = await updateCartQuantity(productId, next);
+            if (!ok || !data.success) {
+                if (data.redirect) window.location.href = data.redirect;
+                else alert(data.message || 'Ошибка');
+                return;
+            }
+            updateCartBadge(data.cartCount);
+            if (qtyEl) qtyEl.textContent = String(data.quantity || next);
+        } catch (err) {
+            alert('Ошибка сети');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+</script>
 </body>
 </html>

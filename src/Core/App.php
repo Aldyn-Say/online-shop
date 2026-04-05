@@ -45,12 +45,7 @@ class App
         }
     }
 
-    /**
-     * Подставляет DTO запроса по типу первого параметра экшена (только POST-данные из форм).
-     *
-     * @param class-string $controllerClass
-     * @return list<object>
-     */
+
     private function resolveControllerArguments(string $controllerClass, string $actionMethod): array
     {
         try {

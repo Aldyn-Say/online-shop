@@ -13,7 +13,7 @@ class User extends Model
     private $avatar;
 
 
-    public function getTableName(): string
+    public static function getTableName(): string
     {
         return 'users';
     }
@@ -30,15 +30,15 @@ class User extends Model
     public function emailExists(string $email, ?int $excludeUserId = null): bool {
         try {
             if ($excludeUserId !== null) {
-                $stmt = $this->pdo->prepare("SELECT 1 FROM {$this->getTableName()} WHERE email = :email AND id != :id LIMIT 1");
+                $stmt = self::getPDO()->prepare("SELECT 1 FROM " . static::getTableName() . " WHERE email = :email AND id != :id LIMIT 1");
                 $stmt->execute([':email' => $email, ':id' => $excludeUserId]);
             } else {
-                $stmt = $this->pdo->prepare("SELECT 1 FROM {$this->getTableName()} WHERE email = :email LIMIT 1");
+                $stmt = self::getPDO()->prepare("SELECT 1 FROM " . static::getTableName() . " WHERE email = :email LIMIT 1");
                 $stmt->execute([':email' => $email]);
             }
             return $stmt->fetch() !== false;
         } catch (PDOException $e) {
-            $this->logError('Database error in User::emailExists: ' . $e->getMessage());
+            self::logError('Database error in User::emailExists: ' . $e->getMessage());
             return false;
         }
     }
@@ -46,17 +46,17 @@ class User extends Model
     public function getByEmail(string $email): ?self
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * FROM {$this->getTableName()} WHERE email = :email");
+            $stmt = self::getPDO()->prepare("SELECT * FROM " . static::getTableName() . " WHERE email = :email");
             $stmt->execute([':email' => $email]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) {
                 return null;
             }
-            $obj = new self($this->pdo);
+            $obj = new self();
             $obj->fillFromArray($row);
             return $obj;
         } catch (PDOException $e) {
-            $this->logError('Database error in User::getByEmail: ' . $e->getMessage());
+            self::logError('Database error in User::getByEmail: ' . $e->getMessage());
             return null;
         }
     }
@@ -64,27 +64,27 @@ class User extends Model
     public function getById($userId): ?self
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * FROM {$this->getTableName()} WHERE id = :id");
+            $stmt = self::getPDO()->prepare("SELECT * FROM " . static::getTableName() . " WHERE id = :id");
             $stmt->execute([':id' => $userId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) {
                 return null;
             }
-            $obj = new self($this->pdo);
+            $obj = new self();
             $obj->fillFromArray($row);
             return $obj;
         } catch (PDOException $e) {
-            $this->logError('Database error in User::getById: ' . $e->getMessage());
+            self::logError('Database error in User::getById: ' . $e->getMessage());
             return null;
         }
     }
 
     public function create($data) {
         try {
-            $stmt = $this->pdo->prepare("INSERT INTO {$this->getTableName()} (name, email, password) VALUES (:name, :email, :password)");
+            $stmt = self::getPDO()->prepare("INSERT INTO " . static::getTableName() . " (name, email, password) VALUES (:name, :email, :password)");
             
             if (!$stmt) {
-                $this->logError('User::create: Failed to prepare statement. Error: ' . implode(', ', $this->pdo->errorInfo()));
+                self::logError('User::create: Failed to prepare statement. Error: ' . implode(', ', self::getPDO()->errorInfo()));
                 return false;
             }
 
@@ -96,7 +96,7 @@ class User extends Model
             
             if (!$result) {
                 $errorInfo = $stmt->errorInfo();
-                $this->logError('User::create: execute() failed. Error: ' . implode(' | ', $errorInfo));
+                self::logError('User::create: execute() failed. Error: ' . implode(' | ', $errorInfo));
                 return false;
             }
             
@@ -107,66 +107,62 @@ class User extends Model
             } else {
                 // Если execute вернул true, но rowCount = 0, значит запись не была вставлена
                 $errorInfo = $stmt->errorInfo();
-                $this->logError('User::create: execute returned true but rowCount = 0. Email: ' . $data['email'] . ' | ErrorInfo: ' . implode(' | ', $errorInfo));
+                self::logError('User::create: execute returned true but rowCount = 0. Email: ' . $data['email'] . ' | ErrorInfo: ' . implode(' | ', $errorInfo));
                 return false;
             }
         } catch (PDOException $e) {
             $errorCode = $e->getCode();
             $errorMessage = $e->getMessage();
             if ($errorCode == '23505' || strpos($errorMessage, 'duplicate key') !== false || strpos($errorMessage, 'unique constraint') !== false) {
-                $this->logError('User::create: Duplicate email detected: ' . $data['email']);
+                self::logError('User::create: Duplicate email detected: ' . $data['email']);
                 // Возвращаем специальный код для дубликата
                 return ['success' => false, 'duplicate_email' => true];
             }
             
-            $this->logError('Database error in User::create: ' . $errorMessage . ' | Code: ' . $errorCode);
+            self::logError('Database error in User::create: ' . $errorMessage . ' | Code: ' . $errorCode);
             return false;
         } catch (\Exception $e) {
-            $this->logError('General error in User::create: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+            self::logError('General error in User::create: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
             return false;
         }
     }
 
-    // Метод для обновления имени
     public function updateName($userId, $name) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET name = :name WHERE id = :id");
+            $stmt = self::getPDO()->prepare("UPDATE " . static::getTableName() . " SET name = :name WHERE id = :id");
             return $stmt->execute([':name' => $name, ':id' => $userId]);
         } catch (PDOException $e) {
-            $this->logError('Database error in User::updateName: ' . $e->getMessage());
+            self::logError('Database error in User::updateName: ' . $e->getMessage());
             return false;
         }
     }
 
-    // Метод для обновления email
     public function updateEmail($userId, $email) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET email = :email WHERE id = :id");
+            $stmt = self::getPDO()->prepare("UPDATE " . static::getTableName() . " SET email = :email WHERE id = :id");
             return $stmt->execute([':email' => $email, ':id' => $userId]);
         } catch (PDOException $e) {
-            $this->logError('Database error in User::updateEmail: ' . $e->getMessage());
+            self::logError('Database error in User::updateEmail: ' . $e->getMessage());
             return false;
         }
     }
 
-    // Метод для обновления пароля
     public function updatePassword($userId, $hashedPassword) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET password = :password WHERE id = :id");
+            $stmt = self::getPDO()->prepare("UPDATE " . static::getTableName() . " SET password = :password WHERE id = :id");
             return $stmt->execute([':password' => $hashedPassword, ':id' => $userId]);
         } catch (PDOException $e) {
-            $this->logError('Database error in User::updatePassword: ' . $e->getMessage());
+            self::logError('Database error in User::updatePassword: ' . $e->getMessage());
             return false;
         }
     }
 
-    // Метод для обновления аватара
     public function updateAvatar($userId, $avatarFileName) {
         try {
-            $stmt = $this->pdo->prepare("UPDATE {$this->getTableName()} SET avatar = :avatar WHERE id = :id");
+            $stmt = self::getPDO()->prepare("UPDATE " . static::getTableName() . " SET avatar = :avatar WHERE id = :id");
             return $stmt->execute([':avatar' => $avatarFileName, ':id' => $userId]);
         } catch (PDOException $e) {
-            $this->logError('Database error in User::updateAvatar: ' . $e->getMessage());
+            self::logError('Database error in User::updateAvatar: ' . $e->getMessage());
             return false;
         }
     }
@@ -177,7 +173,7 @@ class User extends Model
             $user = $this->getById($userId);
             return $user && password_verify($currentPassword, $user->getPassword());
         } catch (PDOException $e) {
-            $this->logError('Database error in User::verifyPassword: ' . $e->getMessage());
+            self::logError('Database error in User::verifyPassword: ' . $e->getMessage());
             return false;
         }
     }

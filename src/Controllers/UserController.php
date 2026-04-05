@@ -15,7 +15,6 @@ class UserController extends BaseController
         $this->userModel = new User();
     }
 
-    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
 
     private function requireAuth(): ?array
     {
@@ -36,8 +35,6 @@ class UserController extends BaseController
         extract($data);
         require __DIR__ . "/../Views/{$view}.php";
     }
-
-    // ========== ВАЛИДАЦИЯ ==========
 
     private function validateName($name): array
     {
@@ -68,8 +65,6 @@ class UserController extends BaseController
         }
         return [];
     }
-
-    // ========== РЕГИСТРАЦИЯ ==========
 
     public function showRegistrationForm()
     {

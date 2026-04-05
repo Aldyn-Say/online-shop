@@ -12,7 +12,7 @@ class Product extends Model
     private $imageUrl;
     private $price;
 
-    public function getTableName(): string
+    public static function getTableName(): string
     {
        return "products";
     }
@@ -30,17 +30,17 @@ class Product extends Model
     public function getAll(): array
     {
         try {
-            $stmt = $this->pdo->query("SELECT * FROM {$this->getTableName()}");
+            $stmt = self::getPDO()->query("SELECT * FROM " . static::getTableName());
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $result = [];
             foreach ($rows as $row) {
-                $product = new self($this->pdo);
+                $product = new self();
                 $product->fillFromArray($row);
                 $result[] = $product;
             }
             return $result;
         } catch (PDOException $e) {
-            $this->logError('Product::getAll: ' . $e->getMessage());
+            self::logError('Product::getAll: ' . $e->getMessage());
             return [];
         }
     }
@@ -48,17 +48,17 @@ class Product extends Model
     public function getById(int $id): ?self
     {
         try {
-            $stmt = $this->pdo->prepare("SELECT * FROM {$this->getTableName()} WHERE id = :id");
+            $stmt = self::getPDO()->prepare("SELECT * FROM " . static::getTableName() . " WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) {
                 return null;
             }
-            $product = new self($this->pdo);
+            $product = new self();
             $product->fillFromArray($row);
             return $product;
         } catch (PDOException $e) {
-            $this->logError('Product::getById: ' . $e->getMessage());
+            self::logError('Product::getById: ' . $e->getMessage());
             return null;
         }
     }

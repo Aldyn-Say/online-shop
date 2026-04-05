@@ -16,9 +16,6 @@ interface AuthInterface
 
     public function getCurrentUserEmail(): string;
 
-    /**
-     * Сохраняет данные авторизованного пользователя (сессия или cookie — зависит от реализации).
-     */
     public function setLoginCookies(int $userId, string $name, string $email): void;
 
     public function startSession(): void;

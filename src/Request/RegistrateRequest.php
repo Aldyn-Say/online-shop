@@ -40,9 +40,7 @@ class RegistrateRequest
         ];
     }
 
-    /**
-     * @return array<string, list<string>> Поля с непустыми списками ошибок (как раньше в UserController::validateRegistration)
-     */
+
     public function validate(?User $userModel = null): array
     {
         $emailErrors = $this->validateEmail();
@@ -57,9 +55,7 @@ class RegistrateRequest
         ]);
     }
 
-    /**
-     * @return list<string>
-     */
+
     private function validateName(): array
     {
         $name = $this->getName();
@@ -76,9 +72,7 @@ class RegistrateRequest
         return [];
     }
 
-    /**
-     * @return list<string>
-     */
+
     private function validateEmail(): array
     {
         $email = $this->getEmail();
@@ -92,9 +86,6 @@ class RegistrateRequest
         return [];
     }
 
-    /**
-     * @return list<string>
-     */
     private function validatePassword(): array
     {
         $password = $this->getPassword();

@@ -1,2 +1,21 @@
 [2026-04-01 12:16:24] Проверка логгеров: LOGGER_TEST_a167f8b7
 [2026-04-01 12:16:24] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-17 07:51:35] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-17 07:55:42] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-20 05:19:52] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-20 05:48:45] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-20 05:53:57] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-20 06:04:10] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 09:20:35] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 09:20:35] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 09:20:36] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 09:30:09] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 09:30:10] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 09:30:11] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 09:30:12] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 09:30:13] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 09:30:13] DB connection failed: SQLSTATE[08006] [7] could not translate host name "db" to address: Temporary failure in name resolution
+[2026-04-28 10:00:41] DB connection failed: SQLSTATE[08006] [7] connection to server at "db" (172.19.0.2), port 5433 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+[2026-04-28 13:41:10] DB connection failed: SQLSTATE[08006] [7] connection to server at "db" (172.19.0.2), port 5433 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?

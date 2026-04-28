@@ -5,6 +5,7 @@ namespace Core\Autoload;
 class Autoloader
 {
     public static function register(string $dir){
+        $dir = rtrim($dir, '/');
         $autoload = function (string $className) use ($dir)
         {
             $path = str_replace('\\', '/', $className);

@@ -1,4 +1,6 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+// PSR-12 §3: отсутствует пустая строка между <?php и namespace
 namespace Controllers;
 
 use Models\Cart;
@@ -31,6 +33,9 @@ class CartController extends BaseController
         exit;
     }
 
+    // TODO (Бизнес-логика): этот метод содержит SQL-запрос прямо в контроллере —
+    // запросы к БД должны быть вынесены в Model или Service (нарушение принципа разделения ответственности).
+    // Метод дублирует логику Cart::getItems() — нужно использовать уже существующий метод модели.
     private function getUserProductQuantity(int $userId, int $productId): int
     {
         try {
@@ -45,6 +50,7 @@ class CartController extends BaseController
         }
     }
 
+    // TODO (PSR-1 §4.3): метод showCart() не имеет return type — нужно добавить: array|null
     public function showCart()
     {
         if (!$this->authService->check()) {
@@ -65,6 +71,7 @@ class CartController extends BaseController
         require_once __DIR__ . '/../Views/cart.php';
     }
 
+    // PSR-12 §4.4: открывающая { должна быть на следующей строке; PSR-1 §4.3: нет return type
     public function handleAddToCart(AddProductRequest $request) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/catalog'];
@@ -153,6 +160,7 @@ class CartController extends BaseController
         return ['redirect' => $redirectUrl];
     }
 
+    // PSR-12 §4.4: открывающая { должна быть на следующей строке; PSR-1 §4.3: нет return type
     public function handleUpdateCart() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/cart'];
@@ -216,6 +224,7 @@ class CartController extends BaseController
         return ['redirect' => '/cart'];
     }
 
+    // PSR-12 §4.4: открывающая { должна быть на следующей строке; PSR-1 §4.3: нет return type
     public function handleRemoveFromCart() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/cart'];

@@ -1,4 +1,6 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+// PSR-12 §3: отсутствует пустая строка между <?php и namespace
 namespace Models;
 
 use PDO;
@@ -6,6 +8,7 @@ use PDOException;
 
 class User extends Model
 {
+    // PSR-1 §4.3: у свойств отсутствуют типы — нужно объявить ?int, ?string
     private $id;
     private $name;
     private $email;
@@ -27,6 +30,7 @@ class User extends Model
         $this->avatar = $row['avatar'] ?? null;
     }
 
+    // PSR-12 §4.4: открывающая { должна быть на следующей строке
     public function emailExists(string $email, ?int $excludeUserId = null): bool {
         try {
             if ($excludeUserId !== null) {
@@ -61,6 +65,7 @@ class User extends Model
         }
     }
 
+    // PSR-1 §4.3: параметр $userId без типа — нужно int
     public function getById($userId): ?self
     {
         try {
@@ -79,6 +84,7 @@ class User extends Model
         }
     }
 
+    // PSR-1 §4.3: параметр $data без типа (array), нет return type; PSR-12 §4.4: { на той же строке
     public function create($data) {
         try {
             $stmt = self::getPDO()->prepare("INSERT INTO " . static::getTableName() . " (name, email, password) VALUES (:name, :email, :password)");
@@ -127,6 +133,7 @@ class User extends Model
         }
     }
 
+    // PSR-1 §4.3: параметры без типов (int, string), нет return type (bool); PSR-12 §4.4: { на той же строке
     public function updateName($userId, $name) {
         try {
             $stmt = self::getPDO()->prepare("UPDATE " . static::getTableName() . " SET name = :name WHERE id = :id");
@@ -137,6 +144,7 @@ class User extends Model
         }
     }
 
+    // PSR-1 §4.3: параметры без типов (int, string), нет return type (bool); PSR-12 §4.4: { на той же строке
     public function updateEmail($userId, $email) {
         try {
             $stmt = self::getPDO()->prepare("UPDATE " . static::getTableName() . " SET email = :email WHERE id = :id");
@@ -147,6 +155,7 @@ class User extends Model
         }
     }
 
+    // PSR-1 §4.3: параметры без типов (int, string), нет return type (bool); PSR-12 §4.4: { на той же строке
     public function updatePassword($userId, $hashedPassword) {
         try {
             $stmt = self::getPDO()->prepare("UPDATE " . static::getTableName() . " SET password = :password WHERE id = :id");
@@ -157,6 +166,7 @@ class User extends Model
         }
     }
 
+    // PSR-1 §4.3: параметры без типов (int, string), нет return type (bool); PSR-12 §4.4: { на той же строке
     public function updateAvatar($userId, $avatarFileName) {
         try {
             $stmt = self::getPDO()->prepare("UPDATE " . static::getTableName() . " SET avatar = :avatar WHERE id = :id");
@@ -167,6 +177,7 @@ class User extends Model
         }
     }
 
+    // PSR-1 §4.3: параметры $userId и $currentPassword без типов (int, string)
     public function verifyPassword($userId, $currentPassword): bool
     {
         try {
@@ -178,6 +189,10 @@ class User extends Model
         }
     }
 
+    // PSR-1 §4.3: геттерам не хватает return type (?int / ?string)
+    // TODO (PSR-1 §4.3): добавить return type к каждому геттеру:
+    //   getId(): ?int, getEmail(): ?string, getPassword(): ?string,
+    //   getName(): ?string, getAvatar(): ?string
     public function getId()
     {
         return $this->id;

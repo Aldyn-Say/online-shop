@@ -1,4 +1,6 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+// PSR-12 §3: отсутствует пустая строка между <?php и namespace
 namespace Models;
 
 use PDO;
@@ -6,6 +8,7 @@ use PDOException;
 
 class Product extends Model
 {
+    // PSR-1 §4.3: у свойств отсутствуют типы — нужно объявить ?int, ?string, ?float
     private $id;
     private $name;
     private $description;
@@ -63,12 +66,15 @@ class Product extends Model
         }
     }
 
+    // PSR-12 §4.4: методы на одной строке — тело должно быть на следующей строке; PSR-1 §4.3: нет return type
+    // TODO (PSR-1 §4.3): каждому геттеру нужно добавить return type: ?int, ?string, ?float
     public function getId() { return $this->id; }
     public function getName() { return $this->name; }
     public function getDescription() { return $this->description; }
     public function getImageUrl() { return $this->imageUrl; }
     public function getPrice()  { return $this->price; }
 
+    // PSR-12 §4.4: методы на одной строке — тело должно быть на следующей строке
     public function setId(?int $id): void { $this->id = $id; }
     public function setName(?string $name): void { $this->name = $name; }
     public function setDescription(?string $description): void { $this->description = $description; }

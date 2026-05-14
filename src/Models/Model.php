@@ -1,4 +1,5 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
 
 namespace Models;
 
@@ -18,6 +19,9 @@ abstract class Model
         }
 
         try {
+            // TODO (Бизнес-логика / Безопасность): учётные данные БД (логин "aldun", пароль "0000")
+            // захардкожены прямо в коде — это грубая ошибка безопасности. Нужно вынести в
+            // переменные окружения (.env) или конфигурационный файл, исключённый из git.
             self::$pdo = new PDO("pgsql:host=db;port=5432;dbname=postgres", "aldun", "0000");
             return self::$pdo;
         } catch (PDOException $e) {

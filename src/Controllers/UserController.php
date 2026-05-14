@@ -1,4 +1,5 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
 
 namespace Controllers;
 
@@ -7,6 +8,7 @@ use Request\RegistrateRequest;
 
 class UserController extends BaseController
 {
+    // PSR-1 §4.3: у свойства $userModel отсутствует тип — нужно User
     protected $userModel;
 
     public function __construct()
@@ -24,6 +26,7 @@ class UserController extends BaseController
         return null;
     }
 
+    // TODO (PSR-1 §4.3): метод getCurrentUser() не имеет return type — нужно добавить: ?User
     private function getCurrentUser()
     {
         $userId = $this->authService->getCurrentUserId();
@@ -36,8 +39,10 @@ class UserController extends BaseController
         require __DIR__ . "/../Views/{$view}.php";
     }
 
+    // PSR-1 §4.3: параметр $name без типа — нужно string
     private function validateName($name): array
     {
+        // PSR-12 §5.1: управляющие конструкции без фигурных скобок — нужно обернуть тело в {}
         if (empty($name)) return ['Заполните имя'];
         if (strlen($name) < 2) return ['Имя должно быть не меньше 2 символов'];
         if (!preg_match('/^[a-zA-Zа-яА-ЯёЁїЇєЄіІ\s\-]+$/u', $name)) {
@@ -46,8 +51,10 @@ class UserController extends BaseController
         return [];
     }
 
+    // PSR-1 §4.3: параметры без типов — нужно string $email, bool $checkUnique, ?int $currentUserId
     private function validateEmail($email, $checkUnique = false, $currentUserId = null): array
     {
+        // PSR-12 §5.1: управляющие конструкции без фигурных скобок — нужно обернуть тело в {}
         if (empty($email)) return ['Введите Email'];
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return ['Неверный формат Email'];
         if ($checkUnique && $this->userModel->emailExists($email, $currentUserId)) {
@@ -56,8 +63,10 @@ class UserController extends BaseController
         return [];
     }
 
+    // PSR-1 §4.3: параметры без типов — нужно string $password, ?string $passwordConfirm
     private function validatePassword($password, $passwordConfirm = null): array
     {
+        // PSR-12 §5.1: управляющие конструкции без фигурных скобок — нужно обернуть тело в {}
         if (empty($password)) return ['Введите пароль'];
         if (strlen($password) < 6) return ['Пароль должен быть минимум 6 символов'];
         if ($passwordConfirm !== null && $password !== $passwordConfirm) {
@@ -66,6 +75,7 @@ class UserController extends BaseController
         return [];
     }
 
+    // PSR-1 §4.3: у метода нет return type — нужно void
     public function showRegistrationForm()
     {
         $this->redirectWithData('registration_form', [
@@ -75,6 +85,7 @@ class UserController extends BaseController
         ]);
     }
 
+    // PSR-1 §4.3: у метода нет return type — нужно array|void (или mixed)
     public function handleRegistration(RegistrateRequest $request)
     {
         $errors = $request->validate($this->userModel);
@@ -116,6 +127,7 @@ class UserController extends BaseController
     }
 
 
+    // PSR-1 §4.3: у метода нет return type — нужно void
     public function showLoginForm()
     {
         $this->redirectWithData('login', [
@@ -124,6 +136,7 @@ class UserController extends BaseController
         ]);
     }
 
+    // PSR-1 §4.3: у метода нет return type — нужно array|void
     public function handleLogin()
     {
         $email = trim($_POST['email'] ?? '');
@@ -163,11 +176,14 @@ class UserController extends BaseController
     }
 
 
+    // PSR-1 §4.3: у метода нет return type — нужно array|void
     public function showProfile()
     {
+        // PSR-12 §5.1: управляющая конструкция без фигурных скобок — нужно обернуть тело в {}
         if ($redirect = $this->requireAuth()) return $redirect;
 
         $user = $this->getCurrentUser();
+        // PSR-12 §5.1: управляющая конструкция без фигурных скобок — нужно обернуть тело в {}
         if (!$user) return ['redirect' => '/login'];
 
         $this->redirectWithData('profile', [
@@ -177,8 +193,10 @@ class UserController extends BaseController
         ]);
     }
 
+    // PSR-1 §4.3: у метода нет return type — нужно array|void
     public function handleProfileUpdate()
     {
+        // PSR-12 §5.1: управляющая конструкция без фигурных скобок — нужно обернуть тело в {}
         if ($redirect = $this->requireAuth()) return $redirect;
 
         $userId = $this->authService->getCurrentUserId();
@@ -235,6 +253,14 @@ class UserController extends BaseController
             }
         }
 
+        // TODO (Бизнес-логика): setcookie() вызывается напрямую в контроллере — это нарушение
+        // разделения ответственности. Обновление куков авторизации должно выполняться через
+        // AuthCookieService::setLoginCookies(), а не в UserController.
+        // TODO (Бизнес-логика): проект использует AuthSessionService (сессии), а не AuthCookieService (куки).
+        // Установка куков тут создаёт несогласованность: данные сохраняются и в сессии, и в куках.
+        // Если нужны куки — перейти на AuthCookieService; иначе — удалить setcookie() отсюда.
+        // TODO (Бизнес-логика): $user может быть null если пользователь не найден —
+        // вызов $user->getName() без null-проверки приведёт к фатальной ошибке
         $user = $this->userModel->getById($userId); // Обновляем куки
         $expire = time() + 60 * 60 * 24 * 30;
         setcookie('user_id', (string) $userId, $expire, '/');
@@ -248,8 +274,10 @@ class UserController extends BaseController
         ]);
     }
 
+    // PSR-1 §4.3: у метода нет return type — нужно array|void
     public function handleAvatarUpload()
     {
+        // PSR-12 §5.1: управляющая конструкция без фигурных скобок — нужно обернуть тело в {}
         if ($redirect = $this->requireAuth()) return $redirect;
 
         $userId = $this->authService->getCurrentUserId();
@@ -318,10 +346,12 @@ class UserController extends BaseController
     }
 
 
+    // PSR-1 §4.3: у метода нет return type — нужно array
     public function logout()
     {
         $this->authService->logout();
         return ['redirect' => '/login'];
+        // Недостижимый код: exit() никогда не будет выполнен — нужно удалить
         exit();
     }
 }

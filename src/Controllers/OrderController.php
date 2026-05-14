@@ -1,4 +1,6 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+// PSR-12 §3: отсутствует пустая строка между <?php и namespace
 namespace Controllers;
 
 use DTO\OrderCreateDTO;
@@ -19,11 +21,16 @@ class OrderController extends BaseController
         $this->cartService = new CartService();
     }
 
+    // TODO (Бизнес-логика): метод getOrderProducts() объявлен как protected, но нигде не вызывается
+    // внутри класса или наследников — либо удалить метод, либо реализовать его использование.
+    // Также импортируются Models\User и Models\UserProduct, но они не используются в этом файле — удалить.
     protected function getOrderProducts(User $user): array
     {
         return $this->cartService->getOrderProducts($user);
     }
 
+    // TODO (PSR-1 §4.3): методы showCheckout(), handleCheckout(), showOrders() не имеют return type —
+    // нужно добавить: array|null (или разделить на отдельные методы с чёткими типами)
     public function showCheckout()
     {
         if (!$this->authService->check()) {

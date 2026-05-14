@@ -1,4 +1,5 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
 
 namespace Service\Auth;
 
@@ -13,6 +14,9 @@ class AuthCookieService implements AuthInterface
         $this->userModel = new User();
     }
 
+    // TODO (Безопасность): check() проверяет только наличие cookie 'user_id', но не его содержимое.
+    // Любой пользователь может вручную установить cookie user_id=1 в браузере и получить доступ
+    // как другой пользователь. Нужно хранить токен сессии, а не user_id напрямую.
     public function check(): bool
     {
         return isset($_COOKIE['user_id']);  // проверка авторизации
@@ -47,6 +51,7 @@ class AuthCookieService implements AuthInterface
         $user = $this->userModel->getByEmail($email);
         if (!$user) {
             return false;
+        // else после return лишний — нужно убрать else и оставить только тело
         } else {
             $passwordDB = $user->getPassword();
         }
@@ -57,6 +62,11 @@ class AuthCookieService implements AuthInterface
         return true;
     }
 
+    // TODO (Безопасность): куки устанавливаются без флагов безопасности:
+    //   - 'httponly' => true  — защита от кражи куки через JavaScript (XSS)
+    //   - 'secure'   => true  — передача только по HTTPS
+    //   - 'expires'  — отсутствует: куки сессионные и удалятся при закрытии браузера.
+    //     Если нужна постоянная авторизация — добавить: 'expires' => time() + 30 * 24 * 3600
     public function setLoginCookies(int $userId, string $name, string $email): void
     {
         $opts = ['path' => '/'];
@@ -83,5 +93,5 @@ class AuthCookieService implements AuthInterface
         setcookie('user_email', '', $opts);
         unset($_COOKIE['user_id'], $_COOKIE['user_name'], $_COOKIE['user_email']);
     }
-
+// PSR-12 §4.1: пустая строка перед закрывающей } класса недопустима — нужно убрать
 }

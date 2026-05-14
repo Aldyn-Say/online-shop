@@ -1,4 +1,6 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+// PSR-12 §3: отсутствует пустая строка между <?php и namespace
 namespace Models;
 
 use PDO;
@@ -6,8 +8,14 @@ use PDOException;
 
 class Cart extends Model
 {
+    // PSR-1 §4.3: у свойства $userId отсутствует тип — нужно ?int
     private $userId;
 
+    // PSR-12 §4.4: открывающая { должна быть на следующей строке
+    // TODO (Бизнес-логика): getTableName() возвращает "cart", но реальная таблица корзины —
+    // "user_products". Значение "cart" нигде не используется в SQL-запросах этого класса
+    // (все запросы явно обращаются к "user_products"). Нужно исправить на "user_products"
+    // или убрать несоответствие.
     public static function getTableName(): string {
         return "cart";
     }

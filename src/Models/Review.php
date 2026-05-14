@@ -1,4 +1,5 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
 
 namespace Models;
 
@@ -7,6 +8,7 @@ use PDOException;
 
 class Review extends Model
 {
+    // PSR-1 §4.3: у свойств отсутствуют типы — нужно ?int, ?string
     private $id;
     private $productId;
     private $userId;
@@ -31,12 +33,15 @@ class Review extends Model
         $this->userName = $row['user_name'] ?? '';
     }
 
+    // TODO (Бизнес-логика): метод getByProductId() не обёрнут в try-catch —
+    // при ошибке БД выбросится необработанное исключение PDOException, что приведёт к 500.
+    // Нужно обернуть в try-catch PDOException, как сделано в других методах этого класса.
     public function getByProductId(int $productId): array
     {
-        $sql = "SELECT pr.*, u.name AS user_name 
-            FROM " . static::getTableName() . " pr 
-            JOIN users u ON pr.user_id = u.id 
-            WHERE pr.product_id = :product_id 
+        $sql = "SELECT pr.*, u.name AS user_name
+            FROM " . static::getTableName() . " pr
+            JOIN users u ON pr.user_id = u.id
+            WHERE pr.product_id = :product_id
             ORDER BY pr.created_at DESC";
 
         $stmt = self::getPDO()->prepare($sql);
@@ -52,6 +57,9 @@ class Review extends Model
         return $result;
     }
 
+    // TODO (Бизнес-логика): метод create() не обёрнут в try-catch —
+    // при ошибке БД (например, дубль записи) выбросится необработанное PDOException.
+    // Нужно обернуть в try-catch PDOException и вернуть false при ошибке.
     public function create(int $productId, int $userId, int $rating, string $comment): bool
     {
         $stmt = self::getPDO()->prepare(
@@ -67,6 +75,9 @@ class Review extends Model
         ]);
     }
 
+    // TODO (Бизнес-логика): метод userAlreadyReviewed() не обёрнут в try-catch —
+    // при ошибке БД выбросится необработанное PDOException.
+    // Нужно обернуть в try-catch PDOException и возвращать false при ошибке.
     public function userAlreadyReviewed(int $productId, int $userId): bool
     {
         $stmt = self::getPDO()->prepare(
@@ -76,6 +87,8 @@ class Review extends Model
 
         return $stmt->fetch() !== false;
     }
+    // PSR-12 §4.4: методы на одной строке — тело должно быть на следующей строке; PSR-1 §4.3: нет return type
+    // TODO (PSR-1 §4.3): каждому геттеру нужно добавить return type: ?int, ?string
     public function getId() { return $this->id; }
     public function getProductId() { return $this->productId; }
     public function getUserId() { return $this->userId; }

@@ -1,4 +1,5 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
 
 namespace Service\Logger;
 
@@ -22,6 +23,8 @@ class LoggerService
     {
         try {
             (new ApplicationLog())->write($level, $message);
+        // TODO (Бизнес-логика): пустой catch-блок "глотает" исключение молча — ошибка запись в БД
+        // будет проигнорирована без следа. Нужно хотя бы логировать в файл через $this->error().
         } catch (Throwable) {
 
         }

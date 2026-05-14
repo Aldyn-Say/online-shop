@@ -1,4 +1,5 @@
 <?php
+// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
 
 namespace Service\Auth;
 
@@ -13,6 +14,9 @@ class AuthSessionService implements AuthInterface
         $this->userModel = new User();
     }
 
+    // TODO (Бизнес-логика): check() обращается к $_SESSION['user_id'] без предварительного вызова
+    // startSession() — если сессия не была запущена ранее, $_SESSION недоступен и метод вернёт false
+    // даже для авторизованного пользователя. Нужно добавить $this->startSession() в начало метода.
     public function check(): bool
     {
         return isset($_SESSION['user_id']);  // проверка авторизации

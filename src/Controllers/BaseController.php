@@ -9,7 +9,6 @@ abstract class BaseController
 {
     protected AuthSessionService $authService;
 
-
     public function __construct()
     {
         $this->authService = new AuthSessionService();

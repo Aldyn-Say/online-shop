@@ -4,7 +4,6 @@ namespace Controllers;
 use Models\Cart;
 use Models\Product;
 
-
 class CatalogController extends BaseController
 {
     private Cart $cartModel;

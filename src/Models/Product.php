@@ -33,6 +33,7 @@ class Product extends Model
             $stmt = self::getPDO()->query("SELECT * FROM " . static::getTableName());
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $result = [];
+
             foreach ($rows as $row) {
                 $product = new self();
                 $product->fillFromArray($row);
@@ -51,6 +52,7 @@ class Product extends Model
             $stmt = self::getPDO()->prepare("SELECT * FROM " . static::getTableName() . " WHERE id = :id");
             $stmt->execute([':id' => $id]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
             if (!$row) {
                 return null;
             }

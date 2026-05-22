@@ -15,7 +15,6 @@ class Order extends Model
     private $total;
     private $status;
     private $createdAt;
-
     private array $products = [];
 
     public static function getTableName(): string {

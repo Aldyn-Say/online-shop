@@ -17,6 +17,7 @@ class App
         $requestUri = $_SERVER['REQUEST_URI'];
         $requestMethod = $_SERVER['REQUEST_METHOD'];
         $path = parse_url($requestUri, PHP_URL_PATH);
+
         if ($path === false) {
             $path = $requestUri;
         }

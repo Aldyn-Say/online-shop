@@ -1,5 +1,6 @@
 <?php
-// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+
+declare(strict_types=1);
 
 namespace Request;
 
@@ -21,14 +22,7 @@ class AddProductRequest
 
     public function validate(): array
     {
-        // TODO (Качество кода): первая строка $errors = [] лишняя — значение сразу перезаписывается
-        // через array_merge(). Нужно упростить:
-        //   return array_merge($this->validateProductId(), $this->validateQuantity());
-        $errors = [];
-        $errors = array_merge($errors, $this->validateProductId());
-        $errors = array_merge($errors, $this->validateQuantity());
-
-        return $errors;
+        return array_merge($this->validateProductId(), $this->validateQuantity());
     }
 
 

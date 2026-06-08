@@ -1,5 +1,6 @@
 <?php
-// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+
+declare(strict_types=1);
 
 namespace Service\Auth;
 
@@ -14,12 +15,14 @@ class AuthCookieService implements AuthInterface
         $this->userModel = new User();
     }
 
-    // TODO (Безопасность): check() проверяет только наличие cookie 'user_id', но не его содержимое.
-    // Любой пользователь может вручную установить cookie user_id=1 в браузере и получить доступ
-    // как другой пользователь. Нужно хранить токен сессии, а не user_id напрямую.
     public function check(): bool
     {
-        return isset($_COOKIE['user_id']);  // проверка авторизации
+        $userId = $this->getCurrentUserId();
+        if ($userId === 0) {
+            return false;
+        }
+
+        return $this->userModel->getById($userId) !== null;
     }
 
     public function getCurrentUserId(): int
@@ -51,25 +54,27 @@ class AuthCookieService implements AuthInterface
         $user = $this->userModel->getByEmail($email);
         if (!$user) {
             return false;
-        // else после return лишний — нужно убрать else и оставить только тело
-        } else {
-            $passwordDB = $user->getPassword();
         }
-        if (!password_verify($password, $passwordDB)) {
+
+        if (!password_verify($password, (string) $user->getPassword())) {
             return false;
         }
+
         $this->setLoginCookies((int) $user->getId(), (string) $user->getName(), (string) $user->getEmail());
         return true;
     }
 
-    // TODO (Безопасность): куки устанавливаются без флагов безопасности:
-    //   - 'httponly' => true  — защита от кражи куки через JavaScript (XSS)
-    //   - 'secure'   => true  — передача только по HTTPS
-    //   - 'expires'  — отсутствует: куки сессионные и удалятся при закрытии браузера.
-    //     Если нужна постоянная авторизация — добавить: 'expires' => time() + 30 * 24 * 3600
     public function setLoginCookies(int $userId, string $name, string $email): void
     {
-        $opts = ['path' => '/'];
+        $opts = [
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ];
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+            $opts['secure'] = true;
+        }
+
         setcookie('user_id', (string) $userId, $opts);
         setcookie('user_name', $name, $opts);
         setcookie('user_email', $email, $opts);
@@ -80,18 +85,26 @@ class AuthCookieService implements AuthInterface
 
     public function startSession(): void
     {
-        if (session_status() === \PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
     }
 
     public function logout(): void
     {
-        $opts = ['path' => '/', 'expires' => time() - 3600];
+        $opts = [
+            'path' => '/',
+            'expires' => time() - 3600,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ];
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+            $opts['secure'] = true;
+        }
+
         setcookie('user_id', '', $opts);
         setcookie('user_name', '', $opts);
         setcookie('user_email', '', $opts);
         unset($_COOKIE['user_id'], $_COOKIE['user_name'], $_COOKIE['user_email']);
     }
-// PSR-12 §4.1: пустая строка перед закрывающей } класса недопустима — нужно убрать
 }

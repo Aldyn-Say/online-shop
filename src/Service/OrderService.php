@@ -1,5 +1,6 @@
 <?php
-// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+
+declare(strict_types=1);
 
 namespace Service;
 
@@ -15,7 +16,7 @@ class OrderService
     private Cart $cartModel;
     private User $userModel;
     private AuthSessionService $authService;
-    // PSR-12 §4.3: отсутствует пустая строка между блоком свойств и первым методом
+
     public function __construct()
     {
         $this->orderModel = new Order();

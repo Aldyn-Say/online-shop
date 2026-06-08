@@ -1,5 +1,6 @@
 <?php
-// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+
+declare(strict_types=1);
 
 namespace Core;
 
@@ -38,17 +39,13 @@ class App
                     exit;
                 }
             } else {
-                // TODO (Бизнес-логика): echo напрямую без установки http_response_code(405)
-                // и заголовка 'Allow' — клиент не получит корректный HTTP-ответ о неподдерживаемом методе.
-                // Нужно: http_response_code(405); header('Allow: GET, POST');
+                http_response_code(405);
+                header('Allow: GET, POST');
                 echo "$requestMethod для адреса $requestUri не поддерживается";
             }
         } else {
             http_response_code(404);
-            // TODO (Бизнес-логика): относительный путь './../Views/404.php' зависит от рабочей директории
-            // процесса, а не от расположения файла — может сломаться при другом CWD.
-            // Нужно использовать абсолютный путь: __DIR__ . '/../../Views/404.php' или константу
-            require_once './../Views/404.php';
+            require_once __DIR__ . '/../../Views/404.php';
         }
     }
 

@@ -1,11 +1,9 @@
 <?php
-// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
-// PSR-12 §3: отсутствует пустая строка между <?php и namespace
+declare(strict_types=1);
+
 namespace Controllers;
 
 use DTO\OrderCreateDTO;
-use Models\User;
-use Models\UserProduct;
 use Service\CartService;
 use Service\OrderService;
 
@@ -21,17 +19,7 @@ class OrderController extends BaseController
         $this->cartService = new CartService();
     }
 
-    // TODO (Бизнес-логика): метод getOrderProducts() объявлен как protected, но нигде не вызывается
-    // внутри класса или наследников — либо удалить метод, либо реализовать его использование.
-    // Также импортируются Models\User и Models\UserProduct, но они не используются в этом файле — удалить.
-    protected function getOrderProducts(User $user): array
-    {
-        return $this->cartService->getOrderProducts($user);
-    }
-
-    // TODO (PSR-1 §4.3): методы showCheckout(), handleCheckout(), showOrders() не имеют return type —
-    // нужно добавить: array|null (или разделить на отдельные методы с чёткими типами)
-    public function showCheckout()
+    public function showCheckout(): array|null
     {
         if (!$this->authService->check()) {
             return ['redirect' => '/login'];
@@ -61,9 +49,11 @@ class OrderController extends BaseController
         unset($_SESSION['checkout_message'], $_SESSION['checkout_errors'], $_SESSION['checkout_form']);
 
         require_once __DIR__ . '/../Views/checkout.php';
+
+        return null;
     }
 
-    public function handleCheckout()
+    public function handleCheckout(): array
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/checkout'];
@@ -110,7 +100,7 @@ class OrderController extends BaseController
         return ['redirect' => '/checkout'];
     }
 
-    public function showOrders()
+    public function showOrders(): array|null
     {
         if (!$this->authService->check()) {
             return ['redirect' => '/login'];
@@ -126,5 +116,7 @@ class OrderController extends BaseController
         unset($_SESSION['order_success']);
 
         require_once __DIR__ . '/../Views/orders.php';
+
+        return null;
     }
 }

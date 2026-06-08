@@ -1,8 +1,9 @@
 <?php
-// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+declare(strict_types=1);
 
 namespace Models;
 
+use Core\Config\Env;
 use PDO;
 use PDOException;
 use RuntimeException;
@@ -19,10 +20,21 @@ abstract class Model
         }
 
         try {
-            // TODO (Бизнес-логика / Безопасность): учётные данные БД (логин "aldun", пароль "0000")
-            // захардкожены прямо в коде — это грубая ошибка безопасности. Нужно вынести в
-            // переменные окружения (.env) или конфигурационный файл, исключённый из git.
-            self::$pdo = new PDO("pgsql:host=db;port=5432;dbname=postgres", "aldun", "0000");
+            $host = Env::get('DB_HOST', 'db');
+            $port = Env::get('DB_PORT', '5432');
+            $dbName = Env::get('DB_NAME');
+            $user = Env::get('DB_USER');
+            $password = Env::get('DB_PASSWORD');
+
+            if ($dbName === null || $user === null || $password === null) {
+                throw new RuntimeException('Database credentials are not configured in .env');
+            }
+
+            self::$pdo = new PDO(
+                "pgsql:host={$host};port={$port};dbname={$dbName}",
+                $user,
+                $password
+            );
             return self::$pdo;
         } catch (PDOException $e) {
             (new LoggerService())->error('DB connection failed: ' . $e->getMessage());

@@ -1,5 +1,5 @@
 <?php
-// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+declare(strict_types=1);
 
 namespace Controllers;
 
@@ -18,8 +18,7 @@ class ReviewsController extends BaseController
         $this->reviewModel = new Review();
     }
 
-    // TODO (PSR-1 §4.3): метод showProduct() не имеет return type — нужно добавить: array|null
-    public function showProduct()
+    public function showProduct(): array|null
     {
         $productId = (int) ($_POST['product_id'] ?? $_GET['id'] ?? 0);
 
@@ -39,10 +38,10 @@ class ReviewsController extends BaseController
         unset($_SESSION['product_message']);
 
         require __DIR__ . '/../Views/reviews.php';
+        return null;
     }
 
-    // TODO (PSR-1 §4.3): метод handleAddReview() не имеет return type — нужно добавить: array
-    public function handleAddReview()
+    public function handleAddReview(): array
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/catalog'];

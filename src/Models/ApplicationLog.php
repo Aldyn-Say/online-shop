@@ -1,8 +1,8 @@
 <?php
-// TODO (PSR-12 §3): добавить declare(strict_types=1) после <?php — строгая типизация обязательна
+
+declare(strict_types=1);
 
 namespace Models;
-
 use PDOException;
 
 class ApplicationLog extends Model

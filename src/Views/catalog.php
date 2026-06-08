@@ -115,12 +115,10 @@
         .buy-btn:hover {
             background: linear-gradient(145deg, #4D3728, #6F4E37); /* Светлее */
             box-shadow: 0 10px 22px rgba(90, 60, 40, 0.5);
-            transform: translateY(-4px);
         }
 
 
         .buy-btn:active {
-            transform: translateY(2px);
             box-shadow: 0 3px 8px rgba(0,0,0,0.3);
             background: linear-gradient(145deg, #2C1E14, #4A3322);
         }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Service\Logger;
 
 use Models\ApplicationLog;
@@ -22,8 +24,8 @@ class LoggerService
     {
         try {
             (new ApplicationLog())->write($level, $message);
-        } catch (Throwable) {
-
+        } catch (Throwable $e) {
+            $this->error('Failed to write log to DB: ' . $e->getMessage());
         }
     }
 }

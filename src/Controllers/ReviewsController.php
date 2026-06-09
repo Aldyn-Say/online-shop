@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Controllers;
 
@@ -17,7 +18,7 @@ class ReviewsController extends BaseController
         $this->reviewModel = new Review();
     }
 
-    public function showProduct()
+    public function showProduct(): array|null
     {
         $productId = (int) ($_POST['product_id'] ?? $_GET['id'] ?? 0);
 
@@ -37,9 +38,10 @@ class ReviewsController extends BaseController
         unset($_SESSION['product_message']);
 
         require __DIR__ . '/../Views/reviews.php';
+        return null;
     }
 
-    public function handleAddReview()
+    public function handleAddReview(): array
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/catalog'];

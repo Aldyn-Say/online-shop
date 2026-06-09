@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core;
 
 use ReflectionException;
@@ -38,11 +40,13 @@ class App
                     exit;
                 }
             } else {
+                http_response_code(405);
+                header('Allow: GET, POST');
                 echo "$requestMethod для адреса $requestUri не поддерживается";
             }
         } else {
             http_response_code(404);
-            require_once './../Views/404.php';
+            require_once __DIR__ . '/../../Views/404.php';
         }
     }
 

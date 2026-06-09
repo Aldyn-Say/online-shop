@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Service;
 
 use DTO\OrderCreateDTO;
@@ -14,6 +16,7 @@ class OrderService
     private Cart $cartModel;
     private User $userModel;
     private AuthSessionService $authService;
+
     public function __construct()
     {
         $this->orderModel = new Order();

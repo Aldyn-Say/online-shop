@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Models;
 
 use PDO;
@@ -6,18 +9,20 @@ use PDOException;
 
 class Order extends Model
 {
-    private $id;
-    private $userId;
-    private $name;
-    private $address;
-    private $phone;
-    private $comment;
-    private $total;
-    private $status;
-    private $createdAt;
+    private ?int $id = null;
+    private ?int $userId = null;
+    private ?string $name = null;
+    private ?string $address = null;
+    private ?string $phone = null;
+    private ?string $comment = null;
+    private ?float $total = null;
+    private ?string $status = null;
+    private ?string $createdAt = null;
+
     private array $products = [];
 
-    public static function getTableName(): string {
+    public static function getTableName(): string
+    {
         return 'orders';
     }
 
@@ -39,18 +44,55 @@ class Order extends Model
         $this->products = $products;
     }
 
-    public function getId(): ?int { return $this->id; }
-    public function getUserId(): ?int { return $this->userId; }
-    public function getName(): ?string { return $this->name; }
-    public function getAddress(): ?string { return $this->address; }
-    public function getPhone(): ?string { return $this->phone; }
-    public function getComment(): ?string { return $this->comment; }
-    public function getTotal(): ?float { return $this->total; }
-    public function getStatus(): ?string { return $this->status; }
-    public function getCreatedAt(): ?string { return $this->createdAt; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getProducts(): array { return $this->products; }
+    public function getUserId(): ?int
+    {
+        return $this->userId;
+    }
 
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function getComment(): ?string
+    {
+        return $this->comment;
+    }
+
+    public function getTotal(): ?float
+    {
+        return $this->total;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function getCreatedAt(): ?string
+    {
+        return $this->createdAt;
+    }
+
+    public function getProducts(): array
+    {
+        return $this->products;
+    }
 
     public function createOrder(int $userId, string $name, string $address, string $phone, string $comment = ''): array
     {
@@ -203,6 +245,7 @@ class Order extends Model
                 $line->fillFromArray($row);
                 $result[] = $line;
             }
+
             return $result;
         } catch (PDOException $e) {
             self::logError('Order::getOrderProducts: ' . $e->getMessage());

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Controllers;
 
@@ -7,7 +8,7 @@ use Request\RegistrateRequest;
 
 class UserController extends BaseController
 {
-    protected $userModel;
+    protected User $userModel;
 
     public function __construct()
     {
@@ -16,7 +17,7 @@ class UserController extends BaseController
     }
 
 
-    private function requireAuth(): ?array
+    private function requireAuth(): array|null
     {
         if (!$this->authService->check()) {
             return ['redirect' => '/login'];
@@ -24,7 +25,7 @@ class UserController extends BaseController
         return null;
     }
 
-    private function getCurrentUser()
+    private function getCurrentUser(): User|null
     {
         $userId = $this->authService->getCurrentUserId();
         return $userId ? $this->userModel->getById($userId) : null;
@@ -35,38 +36,51 @@ class UserController extends BaseController
         extract($data);
         require __DIR__ . "/../Views/{$view}.php";
     }
-
-    private function validateName($name): array
+    
+    private function validateName(string $name): array
     {
-        if (empty($name)) return ['Заполните имя'];
-        if (strlen($name) < 2) return ['Имя должно быть не меньше 2 символов'];
+        if (empty($name)) {
+            return ['Заполните имя'];
+        }
+        if (strlen($name) < 2) {
+            return ['Имя должно быть не меньше 2 символов'];
+        }
         if (!preg_match('/^[a-zA-Zа-яА-ЯёЁїЇєЄіІ\s\-]+$/u', $name)) {
             return ['Имя может содержать только буквы, пробелы и дефисы'];
         }
+
         return [];
     }
 
-    private function validateEmail($email, $checkUnique = false, $currentUserId = null): array
+    private function validateEmail(string $email, bool $checkUnique = false, ?int $currentUserId = null): array
     {
-        if (empty($email)) return ['Введите Email'];
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return ['Неверный формат Email'];
+        if (empty($email)) {
+            return ['Введите Email'];
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['Неверный формат Email'];
+        }
         if ($checkUnique && $this->userModel->emailExists($email, $currentUserId)) {
             return ['Пользователь с таким email уже существует'];
         }
         return [];
     }
 
-    private function validatePassword($password, $passwordConfirm = null): array
+    private function validatePassword(string $password, ?string $passwordConfirm = null): array
     {
-        if (empty($password)) return ['Введите пароль'];
-        if (strlen($password) < 6) return ['Пароль должен быть минимум 6 символов'];
+        if (empty($password)) {
+            return ['Введите пароль'];
+        }
+        if (strlen($password) < 6) {
+            return ['Пароль должен быть минимум 6 символов'];
+        }
         if ($passwordConfirm !== null && $password !== $passwordConfirm) {
             return ['Пароли не совпадают'];
         }
         return [];
     }
 
-    public function showRegistrationForm()
+    public function showRegistrationForm(): void
     {
         $this->redirectWithData('registration_form', [
             'errors' => [],
@@ -75,7 +89,7 @@ class UserController extends BaseController
         ]);
     }
 
-    public function handleRegistration(RegistrateRequest $request)
+    public function handleRegistration(RegistrateRequest $request): ?array
     {
         $errors = $request->validate($this->userModel);
 
@@ -85,7 +99,8 @@ class UserController extends BaseController
                 'old_registration_data' => $_POST,
                 'registration_success' => null,
             ]);
-            return;
+
+            return null;
         }
 
         $data = $request->toArray();
@@ -113,10 +128,11 @@ class UserController extends BaseController
             'old_registration_data' => $_POST,
             'registration_success' => null
         ]);
+
+        return null;
     }
 
-
-    public function showLoginForm()
+    public function showLoginForm(): void
     {
         $this->redirectWithData('login', [
             'errors' => [],
@@ -124,7 +140,7 @@ class UserController extends BaseController
         ]);
     }
 
-    public function handleLogin()
+    public function handleLogin(): ?array
     {
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
@@ -140,10 +156,12 @@ class UserController extends BaseController
         }
 
         if (!empty($errors)) {
-            return $this->redirectWithData('login', [
+            $this->redirectWithData('login', [
                 'errors' => $errors,
                 'old_login_data' => ['email' => $email]
             ]);
+
+            return null;
         }
 
         try {
@@ -160,26 +178,36 @@ class UserController extends BaseController
             'errors' => $errors,
             'old_login_data' => ['email' => $email]
         ]);
+
+        return null;
     }
 
 
-    public function showProfile()
+    public function showProfile(): ?array
     {
-        if ($redirect = $this->requireAuth()) return $redirect;
+        if ($redirect = $this->requireAuth()) {
+            return $redirect;
+        }
 
         $user = $this->getCurrentUser();
-        if (!$user) return ['redirect' => '/login'];
+        if (!$user) {
+            return ['redirect' => '/login'];
+        }
 
         $this->redirectWithData('profile', [
             'user' => $user,
             'errors' => [],
             'success' => []
         ]);
+
+        return null;
     }
 
-    public function handleProfileUpdate()
+    public function handleProfileUpdate(): ?array
     {
-        if ($redirect = $this->requireAuth()) return $redirect;
+        if ($redirect = $this->requireAuth()) {
+            return $redirect;
+        }
 
         $userId = $this->authService->getCurrentUserId();
         $errors = [];
@@ -235,22 +263,33 @@ class UserController extends BaseController
             }
         }
 
-        $user = $this->userModel->getById($userId); // Обновляем куки
-        $expire = time() + 60 * 60 * 24 * 30;
-        setcookie('user_id', (string) $userId, $expire, '/');
-        setcookie('user_name', $user->getName(), $expire, '/');
-        setcookie('user_email', $user->getEmail(), $expire, '/');
+        $user = $this->userModel->getById($userId);
+        if ($user === null) {
+            return ['redirect' => '/login'];
+        }
+
+        if ($success !== []) {
+            $this->authService->setLoginCookies(
+                $userId,
+                (string) $user->getName(),
+                (string) $user->getEmail()
+            );
+        }
 
         $this->redirectWithData('profile', [
             'user' => $user,
             'errors' => $errors,
             'success' => $success
         ]);
+
+        return null;
     }
 
-    public function handleAvatarUpload()
+    public function handleAvatarUpload(): ?array
     {
-        if ($redirect = $this->requireAuth()) return $redirect;
+        if ($redirect = $this->requireAuth()) {
+            return $redirect;
+        }
 
         $userId = $this->authService->getCurrentUserId();
         $errors = [];
@@ -270,7 +309,6 @@ class UserController extends BaseController
             } elseif ($file['size'] > 5 * 1024 * 1024) {
                 $errors['avatar'] = ['Максимум 5MB'];
             } else {
-                // Документ nginx: src/public — сюда же пишем файлы (не корневой /public проекта).
                 $uploadDir = dirname(__DIR__) . '/public/uploads/avatars/';
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
@@ -315,13 +353,14 @@ class UserController extends BaseController
             'errors' => $errors,
             'success' => $success
         ]);
+
+        return null;
     }
 
-
-    public function logout()
+    public function logout(): array
     {
         $this->authService->logout();
+
         return ['redirect' => '/login'];
-        exit();
     }
 }

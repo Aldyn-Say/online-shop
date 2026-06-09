@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Request;
 
 class AddProductRequest
@@ -20,11 +22,7 @@ class AddProductRequest
 
     public function validate(): array
     {
-        $errors = [];
-        $errors = array_merge($errors, $this->validateProductId());
-        $errors = array_merge($errors, $this->validateQuantity());
-
-        return $errors;
+        return array_merge($this->validateProductId(), $this->validateQuantity());
     }
 
 

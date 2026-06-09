@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Controllers;
 
 use Models\Cart;
@@ -16,7 +18,7 @@ class CatalogController extends BaseController
         $this->productModel = new Product();
     }
 
-    public function showCatalog()
+    public function showCatalog(): void
     {
         $products = $this->productModel->getAll();
         $loggedIn = $this->authService->check();

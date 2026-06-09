@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
 
 namespace Models;
 
+use Core\Config\Env;
 use PDO;
 use PDOException;
 use RuntimeException;
@@ -18,7 +20,21 @@ abstract class Model
         }
 
         try {
-            self::$pdo = new PDO("pgsql:host=db;port=5432;dbname=postgres", "aldun", "0000");
+            $host = Env::get('DB_HOST', 'db');
+            $port = Env::get('DB_PORT', '5432');
+            $dbName = Env::get('DB_NAME');
+            $user = Env::get('DB_USER');
+            $password = Env::get('DB_PASSWORD');
+
+            if ($dbName === null || $user === null || $password === null) {
+                throw new RuntimeException('Database credentials are not configured in .env');
+            }
+
+            self::$pdo = new PDO(
+                "pgsql:host={$host};port={$port};dbname={$dbName}",
+                $user,
+                $password
+            );
             return self::$pdo;
         } catch (PDOException $e) {
             (new LoggerService())->error('DB connection failed: ' . $e->getMessage());

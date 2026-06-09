@@ -1,18 +1,21 @@
 <?php
-namespace Models;
 
+declare(strict_types=1);
+
+namespace Models;
 use PDO;
 use PDOException;
 
 class Cart extends Model
 {
-    private $userId;
+    private ?int $userId = null;
 
-    public static function getTableName(): string {
-        return "cart";
-    }
-    public function loadByUserId(int $userId): void
+    public static function getTableName(): string
     {
+        return 'user_products';
+    }
+
+    public function loadByUserId(int $userId): void    {
         $this->userId = $userId;
     }
 

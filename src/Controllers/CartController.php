@@ -1,8 +1,9 @@
 <?php
+
+declare(strict_types=1);
 namespace Controllers;
 
 use Models\Cart;
-use Models\Model;
 use Service\CartService;
 use Request\AddProductRequest;
 
@@ -31,21 +32,7 @@ class CartController extends BaseController
         exit;
     }
 
-    private function getUserProductQuantity(int $userId, int $productId): int
-    {
-        try {
-            $stmt = Model::getPDO()->prepare(
-                "SELECT quantity FROM user_products WHERE user_id = :user_id AND product_id = :product_id"
-            );
-            $stmt->execute([':user_id' => $userId, ':product_id' => $productId]);
-            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-            return (int) ($row['quantity'] ?? 0);
-        } catch (\Throwable) {
-            return 0;
-        }
-    }
-
-    public function showCart()
+    public function showCart(): array|null
     {
         if (!$this->authService->check()) {
             return ['redirect' => '/login'];
@@ -63,9 +50,12 @@ class CartController extends BaseController
         unset($_SESSION['cart_message']);
 
         require_once __DIR__ . '/../Views/cart.php';
+
+        return null;
     }
 
-    public function handleAddToCart(AddProductRequest $request) {
+    public function handleAddToCart(AddProductRequest $request): array
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/catalog'];
         }
@@ -106,12 +96,19 @@ class CartController extends BaseController
             if ($result['success'] ?? false) {
                 if ($this->isAjaxRequest()) {
                     $this->cartModel->loadByUserId((int) $userId);
+                    $productQuantity = 0;
+                    foreach ($this->cartModel->getItems() as $item) {
+                        if ((int) ($item['product_id'] ?? 0) === (int) $productId) {
+                            $productQuantity = (int) ($item['quantity'] ?? 0);
+                            break;
+                        }
+                    }
                     $this->json([
                         'success' => true,
                         'message' => $result['message'] ?? 'Товар добавлен в корзину',
                         'cartCount' => $this->cartModel->getItemsCount(),
                         'cartTotal' => $this->cartModel->getTotal(),
-                        'quantity' => $this->getUserProductQuantity((int) $userId, (int) $productId),
+                        'quantity' => $productQuantity,
                     ]);
                 }
                 $_SESSION['cart_message'] = [
@@ -153,7 +150,8 @@ class CartController extends BaseController
         return ['redirect' => $redirectUrl];
     }
 
-    public function handleUpdateCart() {
+    public function handleUpdateCart(): array
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/cart'];
         }
@@ -199,12 +197,19 @@ class CartController extends BaseController
             if ($this->isAjaxRequest()) {
                 $this->cartModel->loadByUserId((int) $userId);
                 $pid = (int) $productId;
+                $productQuantity = 0;
+                foreach ($this->cartModel->getItems() as $item) {
+                    if ((int) ($item['product_id'] ?? 0) === $pid) {
+                        $productQuantity = (int) ($item['quantity'] ?? 0);
+                        break;
+                    }
+                }
                 $this->json([
                     'success' => true,
                     'message' => $result['message'] ?? 'Количество товара обновлено',
                     'cartCount' => $this->cartModel->getItemsCount(),
                     'cartTotal' => $this->cartModel->getTotal(),
-                    'quantity' => $this->getUserProductQuantity((int) $userId, $pid),
+                    'quantity' => $productQuantity,
                     'productId' => $pid,
                 ]);
             }
@@ -216,8 +221,8 @@ class CartController extends BaseController
         return ['redirect' => '/cart'];
     }
 
-    public function handleRemoveFromCart() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    public function handleRemoveFromCart(): array
+    {        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/cart'];
         }
 

@@ -1,24 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Controllers;
 
 use Service\Auth\AuthInterface;
 use Service\Auth\AuthSessionService;
+use Service\Logger\LoggerService;
 
 abstract class BaseController
 {
-    protected AuthSessionService $authService;
+    protected AuthInterface $authService;
+    protected LoggerService $logger;
 
-    public function __construct()
+    public function __construct(?AuthInterface $authService = null)
     {
-        $this->authService = new AuthSessionService();
+        $this->authService = $authService ?? new AuthSessionService();
+        $this->logger = new LoggerService();
     }
 
     protected function logError(string $message): void
     {
-        $logger = new \Service\Logger\LoggerService();
-        $logger->error($message);
-        $logger->errorToDb($message, 'error');
+        $this->logger->error($message);
+        $this->logger->errorToDb($message, 'error');
     }
 
 }

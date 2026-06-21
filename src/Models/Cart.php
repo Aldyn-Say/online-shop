@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Models;
+
 use PDO;
 use PDOException;
 
@@ -15,7 +16,8 @@ class Cart extends Model
         return 'user_products';
     }
 
-    public function loadByUserId(int $userId): void    {
+    public function loadByUserId(int $userId): void
+    {
         $this->userId = $userId;
     }
 

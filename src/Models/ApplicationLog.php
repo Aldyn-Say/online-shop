@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Models;
+
 use PDOException;
 
 class ApplicationLog extends Model

@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace Controllers;
 
 use Models\Cart;
@@ -222,7 +223,8 @@ class CartController extends BaseController
     }
 
     public function handleRemoveFromCart(): array
-    {        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return ['redirect' => '/cart'];
         }
 

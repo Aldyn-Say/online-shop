@@ -16,7 +16,6 @@ class UserController extends BaseController
         $this->userModel = new User();
     }
 
-
     private function requireAuth(): array|null
     {
         if (!$this->authService->check()) {
@@ -116,7 +115,11 @@ class UserController extends BaseController
                 return ['redirect' => '/login'];
             }
 
-            $errors = ['email' => ['Пользователь с таким email уже существует']];
+            if (is_array($result) && !empty($result['duplicate_email'])) {
+                $errors = ['emmail' => ['Пользователь с таким email уже существует']];
+            } else {
+                $errors = ['general' => ['Ошибка сервера. Попробуйте позже.']];
+            }
 
         } catch (\Exception $e) {
             $this->logError('Registration error: ' . $e->getMessage());
@@ -181,7 +184,6 @@ class UserController extends BaseController
 
         return null;
     }
-
 
     public function showProfile(): ?array
     {

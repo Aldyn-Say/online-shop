@@ -338,7 +338,7 @@
                 $lineTotal = $item->getTotalSum() ?? 0.0;
                 $img = $product->getImageUrl() ?: 'images/placeholder.jpg';
                 ?>
-                <div class="cart-item" data-product-id="<?php echo (int) $pid; ?>" data-line-total="<?php echo (float) $lineTotal; ?>">
+                <div class="cart-item" data-product-id="<?php echo (int) $pid; ?>" data-line-total="<?php echo (float) $lineTotal; ?>"  data-price="<?php echo (float) $product->getPrice(); ?>">
                     <img src="<?php echo htmlspecialchars($img); ?>"
                          alt="<?php echo htmlspecialchars((string) $product->getName()); ?>"
                          class="item-image">
@@ -349,17 +349,18 @@
                     </div>
 
                     <div class="item-quantity">
-                        <form action="/update-cart" method="POST" style="display: flex; align-items: center; gap: 10px;">
-                            <input type="hidden" name="product_id" value="<?php echo (int) $pid; ?>">
-                            <button type="button" class="quantity-btn" onclick="decreaseQuantity(<?php echo (int) $pid; ?>)">-</button>
-                            <input type="number"
-                                   name="quantity"
-                                   value="<?php echo (int) $item->getAmount(); ?>"
-                                   min="1"
-                                   class="quantity-input"
-                                   onchange="this.form.submit()">
-                            <button type="button" class="quantity-btn" onclick="increaseQuantity(<?php echo (int) $pid; ?>)">+</button>
-                        </form>
+                        <button type="button" class="quantity-btn"
+                                data-action="dec"
+                                data-product-id="<?php echo (int) $pid; ?>">-</button>
+                        <input type="number"
+                               name="quantity"
+                               value="<?php echo (int) $item->getAmount(); ?>"
+                               min="1"
+                               class="quantity-input"
+                               data-product-id="<?php echo (int) $pid; ?>">
+                        <button type="button" class="quantity-btn"
+                                data-action="inc"
+                                data-product-id="<?php echo (int) $pid; ?>">+</button>
                     </div>
 
                     <div class="item-total" data-role="line-total">
@@ -368,7 +369,7 @@
 
                     <form action="/remove-from-cart" method="POST" class="js-remove-from-cart" style="display: inline;">
                         <input type="hidden" name="product_id" value="<?php echo (int) $pid; ?>">
-                        <button type="submit" class="item-remove" onclick="return confirm('Удалить товар из корзины?')">Удалить</button>
+                        <button type="submit" class="item-remove">Удалить</button>
                     </form>
                 </div>
             <?php endforeach; ?>
@@ -388,39 +389,110 @@
 </div>
 
 <script>
-    async function postFormAjax(form) {
-        const body = new URLSearchParams(new FormData(form));
-        const res = await fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body
-        });
-        const data = await res.json();
-        return { ok: res.ok, data };
-    }
-
     function formatRub(amount) {
         const n = Number(amount || 0);
         return n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₽';
     }
 
-    function changeQuantity(productId, delta) {
-        var form = document.querySelector('form[action="/update-cart"] input[name="product_id"][value="' + productId + '"]');
-        if (!form) return;
-        form = form.closest('form');
-        var qtyInput = form.querySelector('input[name="quantity"]');
-        if (!qtyInput) return;
-        var val = parseInt(qtyInput.value, 10) || 1;
-        val = val + delta;
-        if (val < 1) val = 1;
-        qtyInput.value = val;
-        form.submit();
+    async function ajaxPost(url, params) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams(params)
+        });
+        const data = await res.json();
+        return { ok: res.ok, data };
     }
-    function increaseQuantity(productId) { changeQuantity(productId, 1); }
-    function decreaseQuantity(productId) { changeQuantity(productId, -1); }
+
+    function updateCartTotal(cartTotal) {
+        const totalEl = document.getElementById('cartTotalValue');
+        if (totalEl) totalEl.textContent = formatRub(cartTotal);
+    }
+
+    async function removeItem(productId, itemEl) {
+        const { ok, data } = await ajaxPost('/remove-from-cart', { product_id: String(productId) });
+        if (!ok || !data.success) {
+            if (data.redirect) { window.location.href = data.redirect; return; }
+            alert(data.message || 'Ошибка');
+            return;
+        }
+        if (itemEl) itemEl.remove();
+        updateCartTotal(data.cartTotal);
+        if (Number(data.cartCount || 0) === 0) {
+            window.location.reload();
+        }
+    }
+
+    async function updateQuantity(productId, quantity, itemEl, qtyInput) {
+        const prev = qtyInput ? (parseInt(qtyInput.value, 10) || 1) : 1;
+        const { ok, data } = await ajaxPost('/update-cart', {
+            product_id: String(productId),
+            quantity: String(quantity)
+        });
+        if (!ok || !data.success) {
+            if (qtyInput) qtyInput.value = String(prev);
+            if (data.redirect) { window.location.href = data.redirect; return; }
+            alert(data.message || 'Ошибка');
+            return;
+        }
+        if (qtyInput) qtyInput.value = String(data.quantity || quantity);
+        const price = parseFloat(itemEl ? (itemEl.dataset.price || '0') : '0');
+        const lineTotalEl = itemEl ? itemEl.querySelector('[data-role="line-total"]') : null;
+        if (lineTotalEl) lineTotalEl.textContent = formatRub(price * (data.quantity || quantity));
+        updateCartTotal(data.cartTotal);
+    }
+
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button.quantity-btn[data-action]');
+        if (!btn) return;
+        const productId = btn.dataset.productId;
+        if (!productId) return;
+        const itemEl = btn.closest('.cart-item');
+        const qtyInput = itemEl ? itemEl.querySelector('input[name="quantity"]') : null;
+        const current = parseInt(qtyInput ? qtyInput.value : '1', 10) || 1;
+        const next = btn.dataset.action === 'inc' ? current + 1 : current - 1;
+
+        btn.disabled = true;
+        try {
+            if (next <= 0) {
+                if (!confirm('Удалить товар из корзины?')) return;
+                await removeItem(productId, itemEl);
+            } else {
+                if (qtyInput) qtyInput.value = String(next);
+                await updateQuantity(productId, next, itemEl, qtyInput);
+            }
+        } catch (err) {
+            if (qtyInput) qtyInput.value = String(current);
+            alert('Ошибка сети');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    let inputTimer = null;
+    document.addEventListener('change', async (e) => {
+        const input = e.target.closest('input.quantity-input[data-product-id]');
+        if (!input) return;
+        clearTimeout(inputTimer);
+        inputTimer = setTimeout(async () => {
+            const productId = input.dataset.productId;
+            const quantity = parseInt(input.value, 10);
+            const itemEl = input.closest('.cart-item');
+            if (!productId) return;
+            if (isNaN(quantity) || quantity < 1) {
+                input.value = '1';
+                return;
+            }
+            try {
+                await updateQuantity(productId, quantity, itemEl, input);
+            } catch (err) {
+                alert('Ошибка сети');
+            }
+        }, 300);
+    });
 
     document.querySelectorAll('form.js-remove-from-cart').forEach((form) => {
         form.addEventListener('submit', async (e) => {
@@ -428,24 +500,11 @@
             if (!confirm('Удалить товар из корзины?')) return;
             const btn = form.querySelector('button[type="submit"]');
             if (btn) btn.disabled = true;
+            const productIdInput = form.querySelector('input[name="product_id"]');
+            const productId = productIdInput ? productIdInput.value : null;
+            const itemEl = form.closest('.cart-item');
             try {
-                const { ok, data } = await postFormAjax(form);
-                if (!ok || !data.success) {
-                    if (data.redirect) window.location.href = data.redirect;
-                    else alert(data.message || 'Ошибка');
-                    return;
-                }
-
-                const item = form.closest('.cart-item');
-                if (item) item.remove();
-
-                const totalEl = document.getElementById('cartTotalValue');
-                if (totalEl) totalEl.textContent = formatRub(data.cartTotal);
-
-                // Если корзина стала пустой — проще перезагрузить, чтобы показать empty-state корректно
-                if (Number(data.cartCount || 0) === 0) {
-                    window.location.reload();
-                }
+                if (productId) await removeItem(productId, itemEl);
             } catch (err) {
                 alert('Ошибка сети');
             } finally {

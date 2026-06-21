@@ -1,8 +1,7 @@
 .idea/
-sourcefiles/postgres/
 .env
-/sourcefiles/postgres/
 *.log
 .env.local
 .DS_Store
 /vendor/
+docker/postgres/data
